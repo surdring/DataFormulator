@@ -47,10 +47,24 @@ def _git_diff_files(ref: str, paths: List[str], cwd: str) -> List[str]:
 
 
 _T_CALL_RE = re.compile(r"\bt\s*\(\s*(['\"])\s*([^'\"]+)\s*\1\s*\)")
+_JSX_TAG_RE = re.compile(r"</?\s*[A-Za-z][A-Za-z0-9]*\b")
+_JSX_TAG_NAME_RE = re.compile(r"</?\s*([A-Za-z][A-Za-z0-9]*)\b")
 
 
 def _count_t_calls(lines: List[str]) -> int:
     return sum(1 for ln in lines if _T_CALL_RE.search(ln))
+
+
+def _count_jsx_tags(lines: List[str]) -> int:
+    return sum(len(_JSX_TAG_RE.findall(ln)) for ln in lines)
+
+
+def _jsx_tag_names_in_line(line: str) -> set:
+    return set(_JSX_TAG_NAME_RE.findall(line or ""))
+
+
+def _block_similarity(a: List[str], b: List[str]) -> float:
+    return difflib.SequenceMatcher(a=a, b=b).ratio()
 
 
 def _has_t_import(text: str) -> bool:
@@ -71,6 +85,23 @@ def _build_t_import_line(file_path: str) -> str:
     return f"import {{ t }} from '{rel}';\n"
 
 
+_IMPORT_FROM_LINE_RE = re.compile(r"\bfrom\s+['\"][^'\"]+['\"]\s*;?\s*$")
+_IMPORT_SIDE_EFFECT_RE = re.compile(r"^\s*import\s+['\"][^'\"]+['\"]\s*;?\s*$")
+
+
+def _find_import_stmt_end(lines: List[str], start_idx: int) -> int:
+    i = start_idx
+    n = len(lines)
+    while i < n:
+        ln = lines[i].rstrip("\n")
+        if _IMPORT_SIDE_EFFECT_RE.match(ln):
+            return i
+        if _IMPORT_FROM_LINE_RE.search(ln):
+            return i
+        i += 1
+    return start_idx
+
+
 def _insert_import_after_imports(lines: List[str], import_line: str) -> Tuple[List[str], bool]:
     # Keep header comments, then imports, then insert.
     i = 0
@@ -80,12 +111,13 @@ def _insert_import_after_imports(lines: List[str], import_line: str) -> Tuple[Li
     while i < n and (lines[i].startswith("#!") or lines[i].lstrip().startswith("//") or lines[i].strip() == ""):
         i += 1
 
-    # Now consume import block(s)
+    # Now consume import statement(s)
     last_import_end = None
     while i < n:
         if lines[i].lstrip().startswith("import "):
-            last_import_end = i
-            i += 1
+            end = _find_import_stmt_end(lines, i)
+            last_import_end = end
+            i = end + 1
             continue
         if lines[i].strip() == "":
             # allow blank lines inside import area
@@ -103,6 +135,9 @@ def _insert_import_after_imports(lines: List[str], import_line: str) -> Tuple[Li
         return lines, False
 
     new_lines = lines[:insert_at] + [import_line] + lines[insert_at:]
+    new_text = "".join(new_lines)
+    if re.search(r"(?m)^\s*import\s*\{\s*$\n\s*import\s+\{\s*t\s*\}\s+from\b", new_text):
+        return lines, False
     return new_lines, True
 
 
@@ -134,17 +169,49 @@ def restore_file_from_ref(file_path: str, ref_text: str, head_text: str) -> Tupl
         if ref_t <= head_t:
             continue
 
-        # Avoid replacing huge blocks (too risky)
-        if (i2 - i1) > 60 or (j2 - j1) > 60:
+        # Avoid processing huge blocks (still keep a safety cap)
+        if (i2 - i1) > 200 or (j2 - j1) > 200:
             continue
 
-        new_head_lines[i1:i2] = ref_block
-        replaced_blocks += 1
+        # Safer strategy: only replace individual lines that contain t('key') in ref.
+        block_changed = False
+        new_block = list(head_block)
+
+        inner = difflib.SequenceMatcher(a=head_block, b=ref_block)
+        for tag2, a1, a2, b1, b2 in inner.get_opcodes():
+            if tag2 != "replace":
+                continue
+
+            hs = head_block[a1:a2]
+            rs = ref_block[b1:b2]
+            k = min(len(hs), len(rs))
+            if k <= 0:
+                continue
+
+            for off in range(k):
+                hln = hs[off]
+                rln = rs[off]
+
+                if _count_t_calls([rln]) == 0:
+                    continue
+                if _count_t_calls([hln]) > 0:
+                    continue
+
+                # Prevent structural JSX changes: require JSX tag name set to match.
+                if _jsx_tag_names_in_line(hln) != _jsx_tag_names_in_line(rln):
+                    continue
+
+                new_block[a1 + off] = rln
+                block_changed = True
+                replaced_blocks += 1
+
+        if block_changed:
+            new_head_lines[i1:i2] = new_block
 
     new_text = "".join(new_head_lines)
 
     inserted_t_import = False
-    if ("t(" in new_text) and (not _has_t_import(new_text)):
+    if (_T_CALL_RE.search(new_text) is not None) and (not _has_t_import(new_text)):
         import_line = None
         # Prefer import line from ref if available
         m = re.search(
