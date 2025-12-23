@@ -80,6 +80,24 @@ def _in_template_literal(lines: List[str], idx: int) -> bool:
     return in_tpl
 
 
+def _is_safe_jsx_text_line(line: str) -> bool:
+    # Only allow replacing JSX children text lines, e.g.
+    #   <Typography>foo</Typography>
+    #   <Typography>foo
+    # This avoids injecting {t(...)} inside object literals like sx={{ ... }}.
+    s = line.strip()
+    if not s:
+        return False
+    if "sx={{" in s or "style={{" in s:
+        return False
+    if "=" in s and "{" in s and "}" in s and "<" not in s:
+        return False
+    return (
+        re.search(r">[^<]*<", line) is not None
+        or re.search(r">[^<]*$", line) is not None
+    )
+
+
 def _block_similarity(a: List[str], b: List[str]) -> float:
     return difflib.SequenceMatcher(a=a, b=b).ratio()
 
@@ -215,6 +233,9 @@ def restore_file_from_ref(file_path: str, ref_text: str, head_text: str) -> Tupl
                 if _count_t_calls([rln]) == 0:
                     continue
                 if _count_t_calls([hln]) > 0:
+                    continue
+
+                if not _is_safe_jsx_text_line(hln):
                     continue
 
                 # Prevent structural JSX changes: require JSX tag name set to match.
