@@ -42,7 +42,6 @@ import {
     IconButton,
 } from '@mui/material';
 
-
 import MuiAppBar from '@mui/material/AppBar';
 import { alpha, createTheme, styled, ThemeProvider } from '@mui/material/styles';
 
@@ -84,6 +83,7 @@ import UploadIcon from '@mui/icons-material/Upload';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import YouTubeIcon from '@mui/icons-material/YouTube';
 import PublicIcon from '@mui/icons-material/Public';
+import { t } from '../i18n';
 
 // Discord Icon Component
 const DiscordIcon: FC<{ sx?: any }> = ({ sx }) => (
@@ -157,7 +157,7 @@ export const ImportStateButton: React.FC<{}> = ({ }) => {
                 inputRef={inputRef}
                 onChange={handleFileUpload}
             />
-            import session
+            {t('session.import')}
         </Button>
     );
 }
@@ -188,7 +188,7 @@ export const ExportStateButton: React.FC<{}> = ({ }) => {
         return JSON.stringify(stateToSerialize);
     });
 
-    return <Tooltip title="save session locally">
+    return <Tooltip title={t('session.saveLocally.tooltip')}>
         <Button 
             variant="text" 
             sx={{textTransform: 'none'}} 
@@ -205,7 +205,7 @@ export const ExportStateButton: React.FC<{}> = ({ }) => {
             }}
             startIcon={<DownloadIcon />}
         >
-            export session
+            {t('session.export')}
         </Button>
     </Tooltip>
 }
@@ -246,7 +246,7 @@ const TableMenu: React.FC = () => {
                 aria-expanded={open ? 'true' : undefined}
                 sx={{ textTransform: 'none' }}
             >
-                Data
+                {t('nav.data')}
             </Button>
             <Menu
                 id="add-table-menu"
@@ -264,22 +264,22 @@ const TableMenu: React.FC = () => {
             >
                 <MenuItem onClick={() => handleOpenDialog('database')}>
                     <Typography fontSize="inherit">
-                        connect to database <CloudQueueIcon fontSize="inherit" /> 
+                        {t('data.menu.database')} <CloudQueueIcon fontSize="inherit" /> 
                     </Typography>
                 </MenuItem>
                 <MenuItem onClick={() => handleOpenDialog('extract')}>
                     <Typography fontSize="inherit">
-                        extract data <span style={{fontSize: '11px'}}>(image/messy text)</span>
+                        {t('data.menu.cleanData')}
                     </Typography>
                 </MenuItem>
                 <MenuItem onClick={() => handleOpenDialog('paste')}>
                     <Typography>
-                        paste data <span style={{fontSize: '11px'}}>(csv/tsv)</span>
+                        {t('dataset.pasteDialog.title')}
                     </Typography>
                 </MenuItem>
                 <MenuItem onClick={() => handleOpenDialog('upload')}>
                     <Typography>
-                        upload data file <span style={{fontSize: '11px'}}>(csv/tsv/json)</span>
+                        {t('data.menu.files')}
                     </Typography>
                 </MenuItem>
             </Menu>
@@ -320,7 +320,7 @@ const SessionMenu: React.FC = () => {
                 endIcon={<KeyboardArrowDownIcon />} 
                 sx={{ textTransform: 'none' }}
             >
-                Session
+                {t('nav.session')}
             </Button>
             <Menu
                 id="session-menu"
@@ -339,24 +339,24 @@ const SessionMenu: React.FC = () => {
                 <MenuItem onClick={(e) => {}}>
                     <ImportStateButton />
                 </MenuItem>
-                <Divider><Typography variant="caption" sx={{ fontSize: 12, color: 'text.secondary' }}>database file</Typography></Divider>
+                <Divider><Typography variant="caption" sx={{ fontSize: 12, color: 'text.secondary' }}>{t('session.databaseFile')}</Typography></Divider>
                 {sessionId && tables.some(t => t.virtual) && 
                     <Typography fontSize="inherit" sx={{ color: theme.palette.warning.main, width: '160px', display: 'flex', alignItems: 'center', gap: 1, fontSize: 9 }}>
-                        This session contains data stored in the database, export and reload the database to resume the session later.
+                        {t('session.dbWarning')}
                     </Typography>}
                 <MenuItem disabled={!sessionId || !tables.some(t => t.virtual)}  onClick={() => {
                     handleDBDownload(sessionId ?? '');
                 }}>
                     <Button startIcon={<DownloadIcon />}
                         sx={{ fontSize: 14, textTransform: 'none', display: 'flex', alignItems: 'center'}}>
-                        download database
+                        {t('session.downloadDb')}
                     </Button>
                 </MenuItem>
                 <MenuItem onClick={() => {}}>
                     <Button disabled={!sessionId} startIcon={<UploadIcon />} 
                         sx={{ fontSize: 14, textTransform: 'none', display: 'flex', alignItems: 'center'}}
                         component="label">
-                        import database
+                        {t('session.importDb')}
                         <input type="file" hidden accept=".db" onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
@@ -395,13 +395,13 @@ const ResetDialog: React.FC = () => {
                 onClick={() => setOpen(true)} 
                 endIcon={<PowerSettingsNewIcon />}
             >
-                Reset
+                {t('session.reset.button')}
             </Button>
             <Dialog onClose={() => setOpen(false)} open={open}>
-                <DialogTitle sx={{ display: "flex", alignItems: "center" }}>Reset Session?</DialogTitle>
+                <DialogTitle sx={{ display: "flex", alignItems: "center" }}>{t('session.reset.title')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        All unexported content (charts, derived data, concepts) will be lost upon reset.
+                        {t('session.reset.desc')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
@@ -417,9 +417,9 @@ const ResetDialog: React.FC = () => {
                         }} 
                         endIcon={<PowerSettingsNewIcon />}
                     >
-                        reset session 
+                        {t('session.reset.button')}
                     </Button>
-                    <Button onClick={() => setOpen(false)}>cancel</Button>
+                    <Button onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
                 </DialogActions>
             </Dialog>
         </>
@@ -447,10 +447,10 @@ const ConfigDialog: React.FC = () => {
     return (
         <>
             <Button variant="text" sx={{textTransform: 'none'}} onClick={() => setOpen(true)} startIcon={<SettingsIcon />}>
-                Settings
+                {t('settings.button')}
             </Button>
             <Dialog onClose={() => setOpen(false)} open={open}>
-                <DialogTitle>Settings</DialogTitle>
+                <DialogTitle>{t('settings.title')}</DialogTitle>
                 <DialogContent>
                     <Box sx={{ 
                         display: 'flex', 
@@ -458,11 +458,11 @@ const ConfigDialog: React.FC = () => {
                         gap: 3,
                         maxWidth: 400
                     }}>
-                        <Divider><Typography variant="caption">Frontend</Typography></Divider>
+                        <Divider><Typography variant="caption">{t('settings.frontend')}</Typography></Divider>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Box sx={{ flex: 1 }}>
                                 <TextField
-                                    label="default chart width"
+                                    label={t('settings.defaultChartWidth')}
                                     type="number"
                                     variant="outlined"
                                     value={defaultChartWidth}
@@ -481,7 +481,7 @@ const ConfigDialog: React.FC = () => {
                                     }}
                                     error={defaultChartWidth < 100 || defaultChartWidth > 1000}
                                     helperText={defaultChartWidth < 100 || defaultChartWidth > 1000 ? 
-                                        "Value must be between 100 and 1000 pixels" : ""}
+                                        t('settings.defaultChartWidth.helper') : ""}
                                 />
                             </Box>
                             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
@@ -489,7 +489,7 @@ const ConfigDialog: React.FC = () => {
                             </Typography>
                             <Box sx={{ flex: 1 }}>
                                 <TextField
-                                    label="default chart height"
+                                    label={t('settings.defaultChartHeight')}
                                     type="number"
                                     variant="outlined"
                                     value={defaultChartHeight}
