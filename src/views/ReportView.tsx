@@ -51,6 +51,7 @@ import { Collapse } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { convertToChartifact, openChartifactViewer } from './ChartifactDialog';
+import { t } from '../i18n';
 
 // Typography constants
 const FONT_FAMILY_SYSTEM = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"';
@@ -218,7 +219,7 @@ export const ReportView: FC = () => {
 
     const charts = useSelector((state: DataFormulatorState) => state.charts);
     const tables = useSelector((state: DataFormulatorState) => state.tables);
-    const selectedModelId = useSelector((state: DataFormulatorState) => state.selectedModelId);
+    const modelSlot = useSelector((state: DataFormulatorState) => state.modelSlots);
     const models = useSelector((state: DataFormulatorState) => state.models);
     const conceptShelfItems = useSelector((state: DataFormulatorState) => state.conceptShelfItems);
     const config = useSelector((state: DataFormulatorState) => state.config);
@@ -262,60 +263,60 @@ export const ReportView: FC = () => {
 
     // Function to capture and share report as image
     const shareReportAsImage = async () => {
-        if (!currentReportId) return;
+    if (!currentReportId) return;
 
-        try {
-            // Find the report content element
-            const reportElement = document.querySelector('[data-report-content]') as HTMLElement;
-            if (!reportElement) {
-                showMessage('Could not find report content to capture', 'error');
+    try {
+        // Find the report content element
+        const reportElement = document.querySelector('[data-report-content]') as HTMLElement;
+        if (!reportElement) {
+            showMessage(t('report.message.captureNotFound'), 'error');
+            return;
+        }
+
+        // Capture the report as canvas with extra padding for borders
+        const canvas = await html2canvas(reportElement, {
+            backgroundColor: '#ffffff',
+            scale: 2, // Higher quality
+            useCORS: true,
+            allowTaint: true,
+            scrollX: 0,
+            scrollY: 0,
+            // Add extra padding to ensure borders are captured
+            width: reportElement.scrollWidth + 4,
+            height: reportElement.scrollHeight + 4,
+            logging: false // Disable console logs
+        });
+
+        // Convert canvas to blob
+        canvas.toBlob((blob: Blob | null) => {
+            if (!blob) {
+                showMessage(t('report.message.imageFailed'), 'error');
                 return;
             }
 
-            // Capture the report as canvas with extra padding for borders
-            const canvas = await html2canvas(reportElement, {
-                backgroundColor: '#ffffff',
-                scale: 2, // Higher quality
-                useCORS: true,
-                allowTaint: true,
-                scrollX: 0,
-                scrollY: 0,
-                // Add extra padding to ensure borders are captured
-                width: reportElement.scrollWidth + 4,
-                height: reportElement.scrollHeight + 4,
-                logging: false // Disable console logs
-            });
+            // Copy to clipboard
+            if (navigator.clipboard && navigator.clipboard.write) {
+                navigator.clipboard.write([
+                    new ClipboardItem({
+                        'image/png': blob
+                    })
+                ]).then(() => {
+                    showMessage(t('report.message.imageCopied'));
+                    setShareButtonSuccess(true);
+                    setTimeout(() => setShareButtonSuccess(false), 2000);
+                }).catch(() => {
+                    showMessage(t('report.message.imageCopyFailed'), 'error');
+                });
+            } else {
+                showMessage(t('report.message.clipboardNotSupported'), 'error');
+            }
+        }, 'image/png', 0.95);
 
-            // Convert canvas to blob
-            canvas.toBlob((blob: Blob | null) => {
-                if (!blob) {
-                    showMessage('Failed to generate image', 'error');
-                    return;
-                }
-
-                // Copy to clipboard
-                if (navigator.clipboard && navigator.clipboard.write) {
-                    navigator.clipboard.write([
-                        new ClipboardItem({
-                            'image/png': blob
-                        })
-                    ]).then(() => {
-                        showMessage('Report image copied to clipboard! You can now paste it anywhere to share.');
-                        setShareButtonSuccess(true);
-                        setTimeout(() => setShareButtonSuccess(false), 2000);
-                    }).catch(() => {
-                        showMessage('Failed to copy to clipboard. Your browser may not support this feature.', 'error');
-                    });
-                } else {
-                    showMessage('Clipboard API not supported in your browser. Please use a modern browser.', 'error');
-                }
-            }, 'image/png', 0.95);
-
-        } catch (error) {
-            console.error('Error generating report image:', error);
-            showMessage('Failed to generate report image. Please try again.', 'error');
-        }
-    };
+    } catch (error) {
+        console.error('Error generating report image:', error);
+        showMessage(t('report.message.imageFailed') ?? '生成报告图片失败，请重试。', 'error');
+    }
+};
 
 
 
@@ -593,7 +594,7 @@ export const ReportView: FC = () => {
 
     const generateReport = async () => {
         if (selectedChartIds.size === 0) {
-            setError('Please select at least one chart');
+            setError(t('report.error.noChartSelected'));
             return;
         }
 
@@ -606,10 +607,9 @@ export const ReportView: FC = () => {
         const reportId = `report-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
         try {
-            let model = models.find(m => m.id == selectedModelId);
-
+            const model = models.find(m => m.id === modelSlot.generation);
             if (!model) {
-                throw new Error('No model selected');
+                throw new Error(t('report.error.noModel'));
             }
 
             const inputTables = tables.filter(t => t.anchored).map(table => ({
@@ -667,7 +667,7 @@ export const ReportView: FC = () => {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to generate report');
+                throw new Error(t('report.error.generateFailed').replace('{message}', `${response.status}`));
             }
 
             const reader = response.body?.getReader();
@@ -713,7 +713,8 @@ export const ReportView: FC = () => {
             }
 
         } catch (err) {
-            setError((err as Error).message || 'Failed to generate report');
+            const msg = (err as Error).message || t('report.error.generateFailed').replace('{message}', '');
+            setError(msg);
         } finally {
             setIsGenerating(false);
         }
@@ -757,7 +758,7 @@ export const ReportView: FC = () => {
                             sx={{ textTransform: 'none' }}
                             startIcon={<ArrowBackIcon />}
                         >
-                            back to explore
+                            {t('report.nav.backToExplore')}
                         </Button>
                         <Divider orientation="vertical" sx={{ mx: 1 }} flexItem />
                         <Button
@@ -768,7 +769,7 @@ export const ReportView: FC = () => {
                             sx={{ textTransform: 'none' }}
                             endIcon={<ArrowForwardIcon />}
                         >
-                            view reports
+                            {t('report.nav.viewReports')}
                         </Button>
                     </Box>
                     {/* Centered Top Bar */}
@@ -804,7 +805,7 @@ export const ReportView: FC = () => {
                         >
                             {/* Natural Flow */}
                             <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-                                Create a
+                                {t('report.style.createPrefix')}
                             </Typography>
                             
                             <ToggleButtonGroup
@@ -832,10 +833,10 @@ export const ReportView: FC = () => {
                                 }}
                             >
                                 {[
-                                    { value: 'short note', label: 'short note' },
-                                    { value: 'blog post', label: 'blog post' },
-                                    { value: 'social post', label: 'social post' },
-                                    { value: 'executive summary', label: 'executive summary' },
+                                    { value: 'short note', label: t('report.style.shortNote.label') },
+                                    { value: 'blog post', label: t('report.style.blogPost.label') },
+                                    { value: 'social post', label: t('report.style.socialPost.label') },
+                                    { value: 'executive summary', label: t('report.style.execSummary.label') },
                                 ].map((option) => (
                                     <ToggleButton 
                                         key={option.value}
@@ -854,16 +855,7 @@ export const ReportView: FC = () => {
                             </ToggleButtonGroup>
 
                             <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-                                from
-                            </Typography>
-                            
-                            <Typography variant="body2" 
-                                color={selectedChartIds.size === 0 ? "warning.main" : 'primary.main'} sx={{ fontWeight: 'bold' }}>
-                                {selectedChartIds.size}
-                            </Typography>
-                            
-                            <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500 }}>
-                                {selectedChartIds.size <= 1 ? 'chart' : 'charts'}
+                                {t('report.compose.selectedCount').replace('{count}', String(selectedChartIds.size))}
                             </Typography>
 
                             {/* Generate Button */}
@@ -884,7 +876,7 @@ export const ReportView: FC = () => {
                                 }}
                                 startIcon={isGenerating ? <CircularProgress size={14} /> : <EditIcon sx={{ fontSize: 16 }} />}
                             >
-                                {isGenerating ? 'composing...' : 'compose'}
+                                {isGenerating ? t('report.button.composing') : t('report.button.generate')}
                             </Button>
                         </Paper>
                     </Box>
@@ -898,13 +890,13 @@ export const ReportView: FC = () => {
 
                         {sortedCharts.length === 0 ? (
                             <Typography color="text.secondary">
-                                No charts available. Create some visualizations first.
+                                {t('report.compose.noCharts')}
                             </Typography>
                         ) : isLoadingPreviews ? (
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
                                 <CircularProgress size={18} sx={{ color: 'text.secondary' }} />
                                 <Typography sx={{ ml: 2 }} color="text.secondary">
-                                    loading chart previews...
+                                    {t('report.compose.loadingPreviews')}
                                 </Typography>
                             </Box>
                         ) : (() => {
@@ -920,7 +912,7 @@ export const ReportView: FC = () => {
                             if (availableCharts.length === 0) {
                                 return (
                                     <Typography color="text.secondary">
-                                        No available charts to display. Charts may still be loading or unavailable.
+                                        {t('report.compose.noAvailableCharts')}
                                     </Typography>
                                 );
                             }
@@ -1000,10 +992,10 @@ export const ReportView: FC = () => {
                             sx={{ textTransform: 'none' }}
                             onClick={() => setMode('compose')}
                         >
-                            create a new report
+                            {t('report.post.createNew')}
                         </Button>
                         <Typography variant="body2" color="text.secondary">
-                            AI generated the post from the selected charts, and it could be inaccurate!
+                            {t('report.post.aiWarning')}
                         </Typography>
                     </Box>
                     <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
@@ -1082,13 +1074,19 @@ export const ReportView: FC = () => {
                                                 </Typography>
                                             </Box>
                                         </Button>
-                                        <Tooltip title="Delete report">
-                                            <IconButton
+                                        <Tooltip title={t('report.tooltip.deleteReport')}>
+                                            <Button
+                                                variant="outlined"
                                                 size="small"
+                                                color="error"
                                                 disabled={isGenerating}
-                                                color='warning'
-                                                onClick={(e) => deleteReport(report.id, e)}
-                                                sx={{ 
+                                                onClick={(event) => deleteReport(report.id, event)}
+                                                sx={{
+                                                    textTransform: 'none',
+                                                    borderRadius: 999,
+                                                    px: 1,
+                                                    minWidth: 0,
+                                                    '& .MuiSvgIcon-root': { fontSize: 16 },
                                                     position: 'absolute',
                                                     right: 4,
                                                     top: '50%',
@@ -1101,7 +1099,7 @@ export const ReportView: FC = () => {
                                                 }}
                                             >
                                                 <DeleteIcon sx={{ fontSize: 14 }} />
-                                            </IconButton>
+                                            </Button>
                                         </Tooltip>
                                     </Box>
                                 ))}
@@ -1114,7 +1112,7 @@ export const ReportView: FC = () => {
                             {/* Action Buttons */}
                             {currentReportId && (
                                 <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 10, display: 'flex', gap: 1 }}>
-                                    <Tooltip title="Create Chartifact report">
+                                    <Tooltip title={t('report.tooltip.createChartifact')}>
                                         <Button
                                             variant="contained"
                                             size="small"
@@ -1140,10 +1138,10 @@ export const ReportView: FC = () => {
                                             }}
                                             startIcon={<CreateChartifact />}
                                         >
-                                            Create Chartifact
+                                            {t('report.button.createChartifact')}
                                         </Button>
                                     </Tooltip>
-                                    <Tooltip title="Share report as image">
+                                    <Tooltip title={t('report.button.shareImage')}>
                                         <Button
                                             variant="contained"
                                             size="small"
@@ -1228,32 +1226,6 @@ export const ReportView: FC = () => {
                                             ? executiveSummaryMarkdownOverrides
                                             : notionStyleMarkdownOverrides
                                     }>{displayedReport}</MuiMarkdown>
-                                    
-                                    {/* Attribution */}
-                                    <Box sx={{ 
-                                        mt: 3, 
-                                        pt: 2, 
-                                        borderTop: '1px solid #e0e0e0',
-                                        textAlign: 'center',
-                                        fontSize: '0.75rem',
-                                        color: '#666'
-                                    }}>
-                                        created with AI using{' '}
-                                        <Link 
-                                            href="https://github.com/microsoft/data-formulator" 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            sx={{ 
-                                                color: '#1976d2',
-                                                textDecoration: 'none',
-                                                '&:hover': {
-                                                    textDecoration: 'underline'
-                                                }
-                                            }}
-                                        >
-                                            https://github.com/microsoft/data-formulator
-                                        </Link>
-                                    </Box>
                                 </Box>
                             </Box>
                         </Box>

@@ -45,17 +45,26 @@ logger = logging.getLogger(__name__)
 agent_bp = Blueprint('agent', __name__, url_prefix='/api/agent')
 
 def get_client(model_config):
+    """构造（或复用）LLM Client。
+
+    基于 (endpoint, model, api_key, api_base, api_version) 做进程级缓存，
+    避免频繁 new Client 与底层 HTTP 连接池重复初始化。
+    """
+
+    # 只对字符串做 strip，避免破坏非字符串字段
     for key in model_config:
-        model_config[key] = model_config[key].strip()
+        if isinstance(model_config[key], str):
+            model_config[key] = model_config[key].strip()
 
-    client = Client(
-        model_config["endpoint"],
-        model_config["model"],
-        model_config["api_key"] if "api_key" in model_config else None,
-        html.escape(model_config["api_base"]) if "api_base" in model_config else None,
-        model_config["api_version"] if "api_version" in model_config else None)
+    clean_config = {
+        "endpoint": model_config.get("endpoint", ""),
+        "model": model_config.get("model", ""),
+        "api_key": model_config.get("api_key", ""),
+        "api_base": html.escape(model_config.get("api_base", "")),
+        "api_version": model_config.get("api_version", ""),
+    }
 
-    return client
+    return Client.from_config(clean_config)
 
 
 @agent_bp.route('/check-available-models', methods=['GET', 'POST'])
@@ -290,10 +299,26 @@ def clean_data_stream_request():
             content = request.get_json()
             token = content["token"]
 
-            client = get_client(content['model'])
+            # 根据是否包含图片自动选择模型：
+            # - 有 image_url: 使用 OCR_OPENAI_* 环境变量指向的多模态 OCR 模型（端口 8082）
+            # - 否则: 使用前端传入的通用文本模型配置（通常是 8080 上的 gpt-oss-20b）
 
-            logger.info(f" model: {content['model']}")
-            
+            artifacts = content.get('artifacts', []) or []
+            has_image = any(a.get('type') == 'image_url' for a in artifacts)
+
+            if has_image and os.getenv("OCR_OPENAI_API_BASE"):
+                ocr_model_config = {
+                    "endpoint": "openai",
+                    "model": os.getenv("OCR_OPENAI_MODEL", "chandra-ocr"),
+                    "api_key": os.getenv("OCR_OPENAI_API_KEY", ""),
+                    "api_base": os.getenv("OCR_OPENAI_API_BASE", ""),
+                    "api_version": "",
+                }
+                client = Client.from_config(ocr_model_config)
+                logger.info(f" using OCR model: {ocr_model_config}")
+            else:
+                client = get_client(content['model'])
+                logger.info(f" model: {content['model']}")
             agent = DataCleanAgentStream(client=client)
 
             try:
@@ -305,20 +330,32 @@ def clean_data_stream_request():
                     error_data = { 
                         "token": token, 
                         "status": "error", 
-                        "result": 'this website doesn\'t allow us to download html from url :(' 
+                        "content": {
+                            "message": "this website doesn't allow us to download html from url :(",
+                            "error_type": "html_download",
+                            "retryable": False,
+                        },
                     }
                 else:
                     error_data = { 
                         "token": token, 
                         "status": "error", 
-                        "result": 'unable to process data clean request' 
+                        "content": {
+                            "message": "unable to process data clean request",
+                            "error_type": "internal",
+                            "retryable": True,
+                        },
                     }
                 yield '\n' + json.dumps(error_data) + '\n'
         else:
             error_data = { 
                 "token": -1, 
                 "status": "error", 
-                "result": "Invalid request format" 
+                "content": {
+                    "message": "Invalid request format",
+                    "error_type": "bad_request",
+                    "retryable": False,
+                },
             }
             yield '\n' + json.dumps(error_data) + '\n'
 

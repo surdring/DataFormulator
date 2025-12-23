@@ -65,6 +65,22 @@ import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import { IdeaChip } from './ChartRecBox';
+import { t } from '../i18n';
+
+type ChartIdea = {
+    text: string;
+    goal: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+    tag?: string;
+};
+
+type ChartIdeaState = {
+    ideas: ChartIdea[];
+    thinkingBuffer: string;
+    isLoading: boolean;
+};
+
+const globalChartIdeaState: Record<string, ChartIdeaState> = {};
 
 // Property and state of an encoding shelf
 export interface EncodingShelfCardProps { 
@@ -309,7 +325,7 @@ const UserActionTableSelector: FC<{
                     />
                 );
             })}
-            <Tooltip title="add more base tables for data formulation">
+            <Tooltip title={t('encoding.tooltip.addBaseTables')}>
                 <span>
                     <IconButton
                         size="small"
@@ -405,11 +421,9 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
     const [userSelectedActionTableIds, setUserSelectedActionTableIds] = useState<string[]>([]);
     
     // Consolidated chart state - maps chartId to its ideas, thinkingBuffer, and loading state
-    const [chartState, setChartState] = useState<Record<string, {
-        ideas: {text: string, goal: string, difficulty: 'easy' | 'medium' | 'hard'}[],
-        thinkingBuffer: string,
-        isLoading: boolean
-    }>>({});
+    const [chartState, setChartState] = useState<Record<string, ChartIdeaState>>(() => ({
+        ...globalChartIdeaState
+    }));
     
     // Get current chart's state
     const currentState = chartState[chartId] || { ideas: [], thinkingBuffer: "", isLoading: false };
@@ -418,25 +432,58 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
     const isLoadingIdeas = currentState.isLoading;
     
     // Helper functions to update current chart's state
-    const setIdeas = (ideas: {text: string, goal: string, difficulty: 'easy' | 'medium' | 'hard'}[]) => {
-        setChartState(prev => ({
-            ...prev,
-            [chartId]: { ...prev[chartId] || { thinkingBuffer: "", isLoading: false }, ideas }
-        }));
+    const setIdeas = (ideas: ChartIdea[]) => {
+        setChartState(prev => {
+            const prevForChart: ChartIdeaState = prev[chartId] || {
+                ideas: [],
+                thinkingBuffer: "",
+                isLoading: false
+            };
+            const nextForChart: ChartIdeaState = { ...prevForChart, ideas };
+            const next = { ...prev, [chartId]: nextForChart };
+            globalChartIdeaState[chartId] = nextForChart;
+            return next;
+        });
     };
     
     const setThinkingBuffer = (thinkingBuffer: string) => {
-        setChartState(prev => ({
-            ...prev,
-            [chartId]: { ...prev[chartId] || { ideas: [], isLoading: false }, thinkingBuffer }
-        }));
+        setChartState(prev => {
+            const prevForChart: ChartIdeaState = prev[chartId] || {
+                ideas: [],
+                thinkingBuffer: "",
+                isLoading: false
+            };
+            const nextForChart: ChartIdeaState = { ...prevForChart, thinkingBuffer };
+            const next = { ...prev, [chartId]: nextForChart };
+            globalChartIdeaState[chartId] = nextForChart;
+            return next;
+        });
     };
     
     const setIsLoadingIdeas = (isLoading: boolean) => {
-        setChartState(prev => ({
-            ...prev,
-            [chartId]: { ...prev[chartId] || { ideas: [], thinkingBuffer: "" }, isLoading }
-        }));
+        setChartState(prev => {
+            const prevForChart: ChartIdeaState = prev[chartId] || {
+                ideas: [],
+                thinkingBuffer: "",
+                isLoading: false
+            };
+            const nextForChart: ChartIdeaState = { ...prevForChart, isLoading };
+            const next = { ...prev, [chartId]: nextForChart };
+            globalChartIdeaState[chartId] = nextForChart;
+            return next;
+        });
+    };
+
+    const cloneIdeasToNewChart = (oldChartId: string, newChartId: string) => {
+        setChartState(prev => {
+            const oldState = prev[oldChartId];
+            if (!oldState) {
+                return prev;
+            }
+            const next = { ...prev, [newChartId]: oldState };
+            globalChartIdeaState[newChartId] = oldState;
+            return next;
+        });
     };
     
     // Add state for developer message dialog
@@ -763,7 +810,7 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
         const timeoutId = setTimeout(() => controller.abort(), config.formulateTimeoutSeconds * 1000);
     
         fetch(engine, {...message, signal: controller.signal })
-            .then((response: Response) => response.json())
+            .then((response) => response.json())
             .then((data) => {
                 
                 dispatch(dfActions.changeChartRunningStatus({chartId, status: false}))
@@ -782,7 +829,7 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
                                 "timestamp": Date.now(),
                                 "type": "error",
                                 "component": "chart builder",
-                                "value": `Data formulation failed, please try again.`,
+                                "value": t('messages.chart.formulationFailed'),
                                 "code": code,
                                 "detail": errorMessage
                             }));
@@ -913,6 +960,9 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
                                     newChart = resolveChartFields(newChart, currentConcepts, refinedGoal['chart_encodings'], candidateTable);
                                 }   
                                 
+                                if (mode == "ideate") {
+                                    cloneIdeasToNewChart(chartId, newChart.id);
+                                }
                                 dispatch(dfActions.addAndFocusChart(newChart));
                             }
 
@@ -928,7 +978,7 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
                                 "timestamp": Date.now(),
                                 "component": "chart builder",
                                 "type": "success",
-                                "value": `Data formulation for ${fieldNamesStr} succeeded.`
+                                "value": t('messages.chart.formulationSuccess').replace('{fields}', fieldNamesStr)
                             }));
                         }
                     }
@@ -938,7 +988,7 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
                         "timestamp": Date.now(),
                         "component": "chart builder",
                         "type": "error",
-                        "value": "No result is returned from the data formulation agent. Please try again."
+                        "value": t('messages.chart.noResultReturned')
                     }));
                 }
             }).catch((error) => {
@@ -949,7 +999,7 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
                         "timestamp": Date.now(),
                         "component": "chart builder",
                         "type": "error",
-                        "value": `Data formulation timed out after ${config.formulateTimeoutSeconds} seconds. Consider breaking down the task, using a different model or prompt, or increasing the timeout limit.`,
+                        "value": t('messages.chart.formulationTimeout').replace('{seconds}', String(config.formulateTimeoutSeconds)),
                         "detail": "Request exceeded timeout limit"
                     }));
                 } else {
@@ -958,7 +1008,7 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
                         "timestamp": Date.now(),
                         "component": "chart builder",
                         "type": "error",
-                        "value": `Data formulation failed, please try again.`,
+                        "value": t('messages.chart.formulationFailed'),
                         "detail": error.message
                     }));
                 }
@@ -993,8 +1043,8 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
             value={prompt}
             label=""
             placeholder={['Auto'].includes(chart.chartType) 
-                ? (isChartAvailable ? "what do you want to visualize?" : " ✏️ what do you want to visualize?")
-                : (isChartAvailable ? "formulate data" : " ✏️  formulate data")}
+                ? (isChartAvailable ? t('encoding.placeholder.visualize') : t('encoding.placeholder.visualizeWithHint'))
+                : (isChartAvailable ? t('encoding.placeholder.formulate') : t('encoding.placeholder.formulateWithHint'))}
             fullWidth
             multiline
             variant="standard"
@@ -1004,7 +1054,11 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
         />
         {trigger ? 
             <Box sx={{display: 'flex'}}>
-                <Tooltip title={<Typography sx={{fontSize: 11}}>formulate and override <TableRowsIcon sx={{fontSize: 10, marginBottom: '-1px'}}/>{trigger.resultTableId}</Typography>}>
+                <Tooltip title={
+                    <Typography sx={{fontSize: 11}}>
+                        {t('encoding.tooltip.formulateOverride').replace('{tableId}', trigger.resultTableId)}
+                    </Typography>
+                }>
                     <span>
                         <IconButton sx={{ marginLeft: "0"}} size="small"
                              color={"warning"} onClick={() => { 
@@ -1016,7 +1070,7 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
                 </Tooltip>
             </Box>
             : 
-            <Tooltip title={`Formulate`}>
+            <Tooltip title={t('encoding.placeholder.formulate')}>
                 <span>
                     <IconButton sx={{ marginLeft: "0"}} 
                          color={"primary"} onClick={() => { deriveNewData(prompt, 'formulate'); }}>
@@ -1103,7 +1157,7 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
                     }
                 }}
             >
-                {currentChartIdeas.length > 0 ? "Ideas" : "Get Ideas"}
+                {currentChartIdeas.length > 0 ? t('encoding.ideas.header.ideas') : t('encoding.ideas.button.get')}
                 <LightbulbOutlinedIcon 
                     sx={{
                         fontSize: 12, 
@@ -1136,7 +1190,7 @@ export const EncodingShelfCard: FC<EncodingShelfCardProps> = function ({ chartId
                 }}
                 onClick={() => setIdeateMode(false)}
             >
-                Editor
+                {t('encoding.editor.header')}
             </Typography>
             <Box sx={{ flex: 1 }} />
             <IconButton

@@ -47,6 +47,7 @@ import { AppDispatch } from '../app/store';
 import { EncodingShelfCard, TriggerCard } from './EncodingShelfCard';
 
 import { useTheme } from '@mui/material/styles';
+import { t } from '../i18n';
 
 // Property and state of an encoding shelf
 export interface EncodingShelfThreadProps { 
@@ -168,8 +169,8 @@ export const EncodingShelfThread: FC<EncodingShelfThreadProps> = function ({ cha
     let chart = allCharts.find(c => c.id == chartId) as Chart;
     let chartTrigger = chart.source == "trigger" ? tables.find(t => t.derive?.trigger?.chart?.id == chartId)?.derive?.trigger : undefined;
 
-    let t = tables.find(t => t.id == chart.tableRef) as DictTable;
-    let activeTableThread = [...getTriggers(t, tables).map(tr => tr.tableId), chart.tableRef];
+    let tableForThread = tables.find(tbl => tbl.id == chart.tableRef) as DictTable;
+    let activeTableThread = [...getTriggers(tableForThread, tables).map(tr => tr.tableId), chart.tableRef];
     
     const dispatch = useDispatch<AppDispatch>();
 
@@ -344,7 +345,10 @@ export const EncodingShelfThread: FC<EncodingShelfThreadProps> = function ({ cha
         <Box sx={{display: 'flex', flexDirection: 'row', height: '100%', 
             position: 'relative',
         }}>
-            <Tooltip placement="left" title={collapseEditor ? "open editor" : "hide editor"}>
+            <Tooltip
+                placement="left"
+                title={collapseEditor ? t('encoding.editor.open') : t('encoding.editor.hide')}
+            >
                 <Button color="primary"
                         sx={{width: 18, minWidth: 18, p: 0}}
                     onClick={()=>{setCollapseEditor(!collapseEditor)}}

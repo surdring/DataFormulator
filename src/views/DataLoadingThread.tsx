@@ -32,6 +32,7 @@ import { DataCleanBlock, DataCleanTableOutput } from '../components/ComponentTyp
 import { getUrls } from '../app/utils';
 import { CustomReactTable } from './ReactTable';
 import { createTableFromText } from '../data/utils';
+import { t } from '../i18n';
 
 type DialogContentItem = {
     type: 'text';
@@ -132,7 +133,7 @@ export const DataPreviewBox: React.FC<{sx?: SxProps}> = ({sx}) => {
     if (!selectedTable) {
         return <Paper variant="outlined" sx={{ p: 1, display: 'flex', flexDirection: 'column', gap: 1, ...sx }}>
             <Typography variant="body2" sx={{ fontSize: '10px', color: 'text.secondary' }}>
-                No data selected
+                {t('dataLoading.noData')}
             </Typography>
         </Paper>
     }
@@ -166,12 +167,12 @@ export const DataPreviewBox: React.FC<{sx?: SxProps}> = ({sx}) => {
     if (selectedTable.content.type === 'image_url') {
         return <Paper variant="outlined" sx={{ p: 1, display: 'flex', flexDirection: 'column', gap: 1, ...sx }}>
             <Typography variant="body2" sx={{ fontSize: '10px', color: 'text.secondary' }}>
-                Image URL: {selectedTable.content.value}
+                {t('dataLoading.preview.imageUrlPrefix')}{selectedTable.content.value}
             </Typography>
             <Box
                 component="img"
                 src={selectedTable.content.value}
-                alt={`Image from ${selectedTable.name || 'data source'}`}
+                alt={t('dataLoading.preview.imageAlt').replace('{name}', selectedTable.name || t('dataLoading.preview.dataSource'))}
                 sx={{
                     maxWidth: '100%',
                     maxHeight: '400px',
@@ -187,7 +188,7 @@ export const DataPreviewBox: React.FC<{sx?: SxProps}> = ({sx}) => {
     if (selectedTable.content.type === 'web_url') {
         return <Paper variant="outlined" sx={{ p: 1, display: 'flex', flexDirection: 'column', gap: 1, ...sx }}>
             <Typography variant="body2" sx={{ fontSize: '12px', color: 'text.primary', fontWeight: 500 }}>
-                Data URL
+                {t('dataLoading.preview.dataUrlTitle')}
             </Typography>
             <Typography variant="body2" sx={{ fontSize: '10px', color: 'text.secondary', wordBreak: 'break-all' }}>
                 {selectedTable.content.value}
@@ -216,6 +217,7 @@ export const DataLoadingInputBox = React.forwardRef<(() => void) | null, {maxLin
 
     const [userImages, setUserImages] = useState<string[]>([]);
     const [prompt, setPrompt] = useState('');
+    const [lastErrorTime, setLastErrorTime] = useState<number | null>(null);
 
     const existOutputBlocks = dataCleanBlocks.length > 0;
 
@@ -265,22 +267,25 @@ export const DataLoadingInputBox = React.forwardRef<(() => void) | null, {maxLin
         return reconstructedDialog;
     })();
 
-    // Define sample tasks
+    // Define sample tasks（硬编码中文示例任务和中文提示语）
     const sampleTasks = [
         {
-            text: "Extract top repos from https://github.com/microsoft",
-            fullText: "extract the top repos information from https://github.com/microsoft?q=&type=all&language=&sort=stargazers",
+            // 从 GitHub 页面提取热门仓库
+            text: "从 https://github.com/microsoft 提取最热门仓库",
+            fullText: "请从这个页面中提取按 star 数排序的最热门仓库信息：https://github.com/microsoft?q=&type=all&language=&sort=stargazers",
             icon: <LanguageIcon sx={{ fontSize: 18 }} />
         },
         {
-            text: "Extract data from this image",
-            fullText: "help me extract data from this image",
+            // 从示例图片中提取表格
+            text: "从这张图片里提取表格数据",
+            fullText: "请帮我从这张图片里提取表格数据，并把结果整理成结构化的表格。",
             icon: <ImageIcon sx={{ fontSize: 18 }} />,
             image: exampleImageTable
         },
         {
-            text: "Extract growth data from text",
-            fullText: `help me extract sub-segment growth data from this text\n\n\"Revenue in Productivity and Business Processes was $33.1 billion and increased 16% (up 14% in constant currency), with the following business highlights:
+            // 从一段财报文字中提取增长数据
+            text: "从这段财报文字中提取各业务线增长数据",
+            fullText: `请从下面这段财报文字中提取各业务线的收入和增长数据，并整理成一张清晰的表格：\n\n"Revenue in Productivity and Business Processes was $33.1 billion and increased 16% (up 14% in constant currency), with the following business highlights:
 ·        Microsoft 365 Commercial products and cloud services revenue increased 16% (up 15% in constant currency) driven by Microsoft 365 Commercial cloud revenue growth of 18% (up 16% in constant currency)
 ·        Microsoft 365 Consumer products and cloud services revenue increased 21% driven by Microsoft 365 Consumer cloud revenue growth of 20%
 ·        LinkedIn revenue increased 9% (up 8% in constant currency)
@@ -292,21 +297,22 @@ Revenue in Intelligent Cloud was $29.9 billion and increased 26% (up 25% in cons
 Revenue in More Personal Computing was $13.5 billion and increased 9%, with the following business highlights:
 ·        Windows OEM and Devices revenue increased 3%
 ·        Xbox content and services revenue increased 13% (up 12% in constant currency)
-·        Search and news advertising revenue excluding traffic acquisition costs increased 21% (up 20% in constant currency)\"`,
+·        Search and news advertising revenue excluding traffic acquisition costs increased 21% (up 20% in constant currency)"`,
             icon: <TextFieldsIcon sx={{ fontSize: 18 }} />
         },
         {
-            text: "Generate UK dynasty dataset",
-            fullText: "help me generate a dataset about uk dynasty with their years of reign and their monarchs",
+            // 生成英国王朝示例数据集
+            text: "生成一个英国王朝与在位时间的数据集",
+            fullText: "请帮我生成一个关于英国王朝的数据集，包含每个王朝的名称、起止在位年份以及主要君主列表，并以表格形式输出。",
             icon: <DatasetIcon sx={{ fontSize: 18 }} />
         }
     ];
 
     const placeholder = (existOutputBlocks) 
         ? (selectedTable && selectedTable.content.type === 'image_url' 
-            ? "extract data from this image" 
-            : "follow-up instruction (e.g., fix headers, remove totals, generate 15 rows, etc.)")
-        : "paste the content (website, image, text block, etc.) and ask AI to extract / clean data from it";
+            ? t('dataLoading.placeholder.image')
+            : t('dataLoading.placeholder.followUp'))
+        : t('dataLoading.placeholder.initial');
 
     let additionalImages = (() => {
         if (selectedTable && selectedTable.content.type === 'image_url') {
@@ -315,11 +321,15 @@ Revenue in More Personal Computing was $13.5 billion and increased 9%, with the 
         return [];
     })();
 
+    const cooldownMs = 10000;
+    const now = Date.now();
+    const inCooldown = lastErrorTime !== null && (now - lastErrorTime) < cooldownMs;
+
     const canSend = (() => {
         // Allow sending if there's prompt text or image data
         const hasPrompt = prompt.trim().length > 0;
         const hasImageData = userImages.length > 0 || additionalImages.length > 0;
-        return (hasPrompt || hasImageData) && !cleanInProgress;
+        return (hasPrompt || hasImageData) && !cleanInProgress && !inCooldown;
     })();
 
     // Function to extract URLs from the current prompt
@@ -336,6 +346,45 @@ Revenue in More Personal Computing was $13.5 billion and increased 9%, with the 
         return [...new Set(cleanedUrls)]; // Remove duplicates
     })();
 
+    const compressImageDataUrl = React.useCallback((dataUrl: string, maxSize = 1600, quality = 0.7): Promise<string> => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        resolve(dataUrl);
+                        return;
+                    }
+
+                    let width = img.width;
+                    let height = img.height;
+                    if (!width || !height) {
+                        resolve(dataUrl);
+                        return;
+                    }
+
+                    const maxDim = Math.max(width, height);
+                    const scale = maxDim > maxSize ? maxSize / maxDim : 1;
+                    width = Math.floor(width * scale);
+                    height = Math.floor(height * scale);
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressed = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressed || dataUrl);
+                } catch {
+                    resolve(dataUrl);
+                }
+            };
+            img.onerror = () => resolve(dataUrl);
+            img.src = dataUrl;
+        });
+    }, []);
+
     const handlePasteImage = (e: React.ClipboardEvent<HTMLDivElement>) => {
         if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
             const files = Array.from(e.clipboardData.files);
@@ -350,12 +399,21 @@ Revenue in More Personal Computing was $13.5 billion and increased 9%, with the 
                     reader.onload = () => {
                         const res = reader.result as string;
                         if (res) {
-                            newImages.push(res);
-                        }
-                        processedCount++;
-                        
-                        if (processedCount === imageFiles.length) {
-                            setUserImages(prev => [...prev, ...newImages]);
+                            compressImageDataUrl(res).then((compressed) => {
+                                newImages.push(compressed);
+                            }).catch(() => {
+                                newImages.push(res);
+                            }).finally(() => {
+                                processedCount++;
+                                if (processedCount === imageFiles.length) {
+                                    setUserImages(prev => [...prev, ...newImages]);
+                                }
+                            });
+                        } else {
+                            processedCount++;
+                            if (processedCount === imageFiles.length) {
+                                setUserImages(prev => [...prev, ...newImages]);
+                            }
                         }
                     };
                     reader.readAsDataURL(file);
@@ -451,7 +509,10 @@ Revenue in More Personal Computing was $13.5 billion and increased 9%, with the 
                             if (data.status === "ok" && data.content) {
                                 finalResult = data;
                                 break;
-                            } 
+                            } else if (data.status && data.status !== "ok") {
+                                finalResult = data;
+                                break;
+                            }
                         } catch (parseError) {
                             continue
                         }
@@ -485,13 +546,21 @@ Revenue in More Personal Computing was $13.5 billion and increased 9%, with the 
                     setPrompt('');
                     setUserImages([]);
                 } else {
-                    // Generation failed
+                    const errorContent = finalResult?.content;
+                    let displayError = t('messages.dataLoading.noResultReturned');
+                    if (typeof errorContent === 'string') {
+                        displayError = errorContent;
+                    } else if (errorContent && typeof errorContent === 'object') {
+                        displayError = (errorContent as any).message || displayError;
+                    }
+
                     dispatch(dfActions.addMessages({
                         timestamp: Date.now(),
                         type: 'error',
                         component: 'data loader',
-                        value: finalResult?.content || 'Unable to extract tables from response',
+                        value: displayError,
                     }));
+                    setLastErrorTime(Date.now());
                     // Clear input fields only after failed completion
                     setPrompt('');
                     onStreamingContentUpdate?.('');
@@ -517,17 +586,18 @@ Revenue in More Personal Computing was $13.5 billion and increased 9%, with the 
                     timestamp: Date.now(),
                     type: 'info',
                     component: 'data loader',
-                    value: 'Generation stopped by user',
+                    value: t('messages.dataLoading.stoppedByUser'),
                 }));
             } else {
                 // Generation failed
-                const errorMessage = `Server error while processing data: ${error.message}`;
+                const errorMessage = `${t('messages.dataLoading.serverError.prefix')}${error.message}`;
                 dispatch(dfActions.addMessages({
                     timestamp: Date.now(),
                     type: 'error',
                     component: 'data loader',
                     value: errorMessage,
                 }));
+                setLastErrorTime(Date.now());
             }
             
             // Clear input fields only after failed completion
@@ -645,7 +715,7 @@ Revenue in More Personal Computing was $13.5 billion and increased 9%, with the 
                 slotProps={{
                     input: {
                         endAdornment: cleanInProgress ? (
-                            <Tooltip title="Stop generation">
+                            <Tooltip title={t('dataLoading.button.stop')}>
                                 <IconButton color='error' size="small" onClick={stopGeneration}>
                                     <StopIcon />
                                 </IconButton>
@@ -690,9 +760,15 @@ Revenue in More Personal Computing was $13.5 billion and increased 9%, with the 
                                             await new Promise<void>((resolve) => {
                                                 reader.onload = () => {
                                                     const dataUrl = reader.result as string;
-                                                    imagesToSend = [dataUrl];
-                                                    setUserImages([dataUrl]);
-                                                    resolve();
+                                                    compressImageDataUrl(dataUrl).then((compressed) => {
+                                                        imagesToSend = [compressed];
+                                                        setUserImages([compressed]);
+                                                    }).catch(() => {
+                                                        imagesToSend = [dataUrl];
+                                                        setUserImages([dataUrl]);
+                                                    }).finally(() => {
+                                                        resolve();
+                                                    });
                                                 };
                                                 reader.readAsDataURL(blob);
                                             });
@@ -953,7 +1029,7 @@ export const SingleDataCleanThreadView: React.FC<{thread: ThreadBlock, sx?: SxPr
                                             }}>
                                                 {table.name}
                                             </Typography>
-                                            {isLastBlock && <Tooltip title="delete table">
+                                            {isLastBlock && <Tooltip title={t('dataLoading.button.deleteTable')}>
                                                 <IconButton aria-label="share" size="small" sx={{ ml: 'auto', padding: 0.25, '&:hover': {
                                                     transform: 'scale(1.2)',
                                                     transition: 'all 0.2s ease'

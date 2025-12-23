@@ -19,6 +19,7 @@ import {
 import React from 'react';
 import { alpha, useTheme } from '@mui/material/styles';
 import { CodeBox } from './VisualizationView';
+import { t } from '../i18n';
 
 export const GroupHeader = styled('div')(({ theme }) => ({
     position: 'sticky',
@@ -134,7 +135,7 @@ export const ChatDialog: FC<ChatDialogProps> = function ChatDialog({code, dialog
         body = <Box sx={{display: "flex", overflowX: "auto", flexDirection: "column", 
                          justifyContent: "space-between", position: "relative", marginTop: "10px", minHeight: "50px"}}>
             <Typography sx={{ fontSize: 14 }}  color="text.secondary" gutterBottom>
-                {"There is no conversation history yet"}
+                {t('chatDialog.noHistory')}
             </Typography>
         </Box>
     } else {
@@ -171,7 +172,7 @@ export const ChatDialog: FC<ChatDialogProps> = function ChatDialog({code, dialog
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px'
                             }} gutterBottom>
-                                {isUser ? 'You' : 'Assistant'}
+                                {isUser ? t('chatDialog.role.user') : t('chatDialog.role.assistant')}
                             </Typography>
                             <Box sx={{display: 'flex', flexDirection: "column", alignItems: "flex-start", flex: 'auto'}}>
                                 <Box sx={{maxWidth: 800, width: 'fit-content', display: 'flex', flexDirection: 'column'}}>
@@ -196,12 +197,12 @@ export const ChatDialog: FC<ChatDialogProps> = function ChatDialog({code, dialog
             open={open}
             key="chat-dialog-dialog"
         >
-            <DialogTitle><Typography>Dialog with Agents</Typography></DialogTitle>
+            <DialogTitle><Typography>{t('chatDialog.title')}</Typography></DialogTitle>
             <DialogContent ref={dialogContentRef} sx={{overflowY: "auto", overflowX: "hidden"}} dividers>
                 {body}
             </DialogContent>
             <DialogActions>
-                <Button onClick={()=>{ handleCloseDialog() }}>Close</Button>
+                <Button onClick={()=>{ handleCloseDialog() }}>{t('common.close')}</Button>
             </DialogActions>
         </Dialog>
     );

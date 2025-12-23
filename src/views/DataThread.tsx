@@ -65,6 +65,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { alpha } from '@mui/material/styles';
 
 import { dfSelectors } from '../app/dfSlice';
+import { t } from '../i18n';
 
 export const ThinkingBanner = (message: string, sx?: SxProps) => (
     <Box sx={{ 
@@ -109,6 +110,47 @@ export const ThinkingBanner = (message: string, sx?: SxProps) => (
         </Box>
     </Box>
 );
+
+
+const useIntersectionVisibility = (rootMargin: string = '200px 0px 200px 0px') => {
+    const ref = useRef<HTMLDivElement | null>(null);
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            setIsVisible(true);
+            return;
+        }
+
+        const node = ref.current;
+        if (!node) {
+            return;
+        }
+
+        const IO = (window as any).IntersectionObserver;
+        if (!IO) {
+            setIsVisible(true);
+            return;
+        }
+
+        const observer = new IO((entries: any[]) => {
+            const entry = entries[0];
+            setIsVisible(entry.isIntersecting || entry.intersectionRatio > 0);
+        }, {
+            root: null,
+            rootMargin,
+            threshold: 0.01,
+        });
+
+        observer.observe(node);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [rootMargin]);
+
+    return { ref, isVisible };
+};
 
 
 // Metadata Popup Component
@@ -166,12 +208,14 @@ const MetadataPopup = memo<{
                     }}
                 >
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        Attach metadata to <Typography component="span" sx={{ fontSize: 'inherit', color: 'primary.main'}}>{tableName}</Typography>
+                        {t('dataThread.metadata.title.prefix')}
+                        <Typography component="span" sx={{ fontSize: 'inherit', color: 'primary.main'}}>{tableName}</Typography>
+                        {t('dataThread.metadata.title.suffix')}
                     </Typography>
                     <TextField
                         autoFocus
-                        label="metadata"
-                        placeholder="Attach additional contexts or guidance so that AI agents can better understand and process the data."
+                        label={t('dataThread.metadata.label')}
+                        placeholder={t('dataThread.metadata.placeholder')}
                         fullWidth
                         multiline
                         slotProps={{
@@ -187,8 +231,8 @@ const MetadataPopup = memo<{
                         sx={{ my: 1, '& .MuiInputBase-input': { fontSize: 12 } }}
                     />
                     <Box sx={{ mt: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
-                        <Button size="small" sx={{ml: 'auto'}} onClick={handleCancel} color="primary">Cancel</Button>
-                        <Button size="small" onClick={handleSave} color="primary" disabled={!hasChanges}>Save</Button>
+                        <Button size="small" sx={{ml: 'auto'}} onClick={handleCancel} color="primary">{t('common.cancel')}</Button>
+                        <Button size="small" onClick={handleSave} color="primary" disabled={!hasChanges}>{t('common.save')}</Button>
                     </Box>
                 </Paper>
             </ClickAwayListener>
@@ -251,7 +295,7 @@ const AgentStatusBox = memo<{
                         color: getAgentStatusColor(agentStatus)
                     },
                 }}>
-                    {agentStatus === 'running' && ThinkingBanner('thinking...', { py: 0.5 })}
+                    {agentStatus === 'running' && ThinkingBanner(t('dataThread.agent.thinking'), { py: 0.5 })}
                     {agentStatus === 'completed' && <CheckCircleOutlineIcon />}
                     {agentStatus === 'failed' && <CancelOutlinedIcon />}
                     {agentStatus === 'warning' && <HelpOutlineIcon />}
@@ -259,12 +303,12 @@ const AgentStatusBox = memo<{
                         ml: 0.5, 
                         fontSize: 10,
                     }}>
-                        {agentStatus === 'warning' && 'hmm...'}
-                        {agentStatus === 'failed' && 'oops...'}
-                        {agentStatus === 'completed' && 'completed'}
+                        {agentStatus === 'warning' && t('dataThread.agent.status.warning')}
+                        {agentStatus === 'failed' && t('dataThread.agent.status.failed')}
+                        {agentStatus === 'completed' && t('dataThread.agent.status.completed')}
                         {agentStatus === 'running' && ''}
                     </Typography>
-                    <Tooltip title="Delete message">
+                    <Tooltip title={t('dataThread.agent.tooltip.delete')}>
                         <IconButton
                             className="delete-button"
                             size="small"
@@ -333,6 +377,15 @@ let buildChartCard = (
             position: 'relative',
             ...(unread && {
                 boxShadow: '0 0 6px rgba(255, 152, 0, 0.15), 0 0 12px rgba(255, 152, 0, 0.15)',
+                animation: 'glow 2s ease-in-out infinite alternate',
+                '@keyframes glow': {
+                    '0%': {
+                        boxShadow: '0 0 6px rgba(255, 152, 0, 0.15), 0 0 12px rgba(255, 152, 0, 0.15)',
+                    },
+                    '100%': {
+                        boxShadow: '0 0 8px rgba(255, 152, 0, 0.2), 0 0 16px rgba(255, 152, 0, 0.2)',
+                    },
+                },
             })
         }}>
         {chartElement.element}
@@ -371,7 +424,7 @@ const EditableTableName: FC<{
 
     if (!isEditing) {
         return (
-            <Tooltip title="edit table name">
+            <Tooltip title={t('dataThread.tableName.tooltip.edit')}>
                 <Typography
                     onClick={(event) => {
                         event.stopPropagation();
@@ -642,7 +695,7 @@ let SingleThreadGroupView: FC<{
                             padding: 0.25,
                             '&:hover': {
                                 transform: 'scale(1.3)',
-                                transition: 'all 0.1s linear'
+                                transition: 'all 0.2s ease'
                             },
                             '&.Mui-disabled': {
                                 color: 'rgba(0, 0, 0, 0.5)'
@@ -678,7 +731,7 @@ let SingleThreadGroupView: FC<{
                                 padding: 0.25, 
                                 '&:hover': {
                                     transform: 'scale(1.2)',
-                                    transition: 'all 0.1s linear'
+                                    transition: 'all 0.2s ease'
                                 } 
                             }}
                                 onClick={(event) => {
@@ -697,7 +750,7 @@ let SingleThreadGroupView: FC<{
                         {tableDeleteEnabled && <Tooltip key="delete-table-btn-tooltip" title="delete table">
                             <IconButton aria-label="share" size="small" sx={{ padding: 0.25, '&:hover': {
                                 transform: 'scale(1.2)',
-                                transition: 'all 0.1s linear'
+                                transition: 'all 0.2s ease'
                                 } }}
                                 onClick={(event) => {
                                     event.stopPropagation();
@@ -711,7 +764,7 @@ let SingleThreadGroupView: FC<{
                         <Tooltip key="create-new-chart-btn-tooltip" title="create a new chart">
                             <IconButton aria-label="share" size="small" sx={{ padding: 0.25, '&:hover': {
                                 transform: 'scale(1.2)',
-                                transition: 'all 0.1s linear'
+                                transition: 'all 0.2s ease'
                                 } }}
                                 onClick={(event) => {
                                     event.stopPropagation();
@@ -833,7 +886,7 @@ let SingleThreadGroupView: FC<{
             '& .selected-card': { 
                 border: `2px solid ${theme.palette.primary.light}`,
             },
-            transition: "box-shadow 0.1s linear",
+            transition: "box-shadow 0.3s ease-in-out",
         }}
         data-thread-index={threadIdx}>
         <Box sx={{ display: 'flex', direction: 'ltr', margin: '2px 2px 8px 2px' }}>
@@ -901,8 +954,10 @@ const VegaLiteChartElement = memo<{
     onDelete: (chartId: string) => void
 }>(({ chart, assembledSpec, table, status, isSaved, onChartClick, onDelete }) => {
     const id = `data-thread-chart-Element-${chart.id}`;
+    const { ref, isVisible } = useIntersectionVisibility();
     return (
         <Box
+            ref={ref}
             onClick={() => onChartClick(chart.id, table.id)}
             className="vega-thumbnail-box"
             style={{ width: "100%", position: "relative", cursor: "pointer !important" }}
@@ -919,7 +974,7 @@ const VegaLiteChartElement = memo<{
                 </Box>}
                 <Box className='data-thread-chart-card-action-button'
                     sx={{ zIndex: 10, color: 'blue', position: "absolute", right: 1, background: 'rgba(255, 255, 255, 0.95)' }}>
-                    <Tooltip title="delete chart">
+                    <Tooltip title={t('dataThread.chart.tooltip.delete')}>
                         <IconButton 
                             size="small" 
                             color="warning" 
@@ -941,7 +996,19 @@ const VegaLiteChartElement = memo<{
                         '& canvas': { width: 'auto !important', height: 'auto !important', maxWidth: 120, maxHeight: 100 }
                     }}
                 >
-                    <VegaLite spec={assembledSpec} actions={false} />
+                    {isVisible ? (
+                        <VegaLite spec={assembledSpec} actions={false} />
+                    ) : (
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '100%',
+                            minHeight: 72,
+                        }}>
+                            {generateChartSkeleton(getChartTemplate(chart.chartType)?.icon, 32, 32)}
+                        </Box>
+                    )}
                 </Box>
             </Box>
         </Box>
@@ -969,7 +1036,7 @@ const MemoizedChartObject = memo<{
 
     let deleteButton = <Box className='data-thread-chart-card-action-button'
         sx={{ zIndex: 10, color: 'blue', position: "absolute", right: 1, background: 'rgba(255, 255, 255, 0.95)' }}>
-        <Tooltip title="delete chart">
+        <Tooltip title={t('dataThread.chart.tooltip.delete')}>
             <IconButton size="small" color="warning" onClick={(event) => {
                 event.stopPropagation();
                 onDelete(chart.id);
@@ -1216,7 +1283,7 @@ export const DataThread: FC<{sx?: SxProps}> = function ({ sx }) {
         flexWrap: drawerOpen ? 'wrap' : 'nowrap',
         gap: 1,
         p: 1,
-        transition: 'max-width 0.1s linear', // Smooth width transition
+        transition: 'max-width 0.3s ease-in-out', // Smooth width transition
     }}>
         {Object.entries(leafTableGroups).map(([groupId, leafTables], i) => {
 
