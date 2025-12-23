@@ -63,6 +63,23 @@ def _jsx_tag_names_in_line(line: str) -> set:
     return set(_JSX_TAG_NAME_RE.findall(line or ""))
 
 
+def _in_template_literal(lines: List[str], idx: int) -> bool:
+    in_tpl = False
+    for i in range(0, idx + 1):
+        ln = lines[i]
+        j = 0
+        while True:
+            k = ln.find('`', j)
+            if k == -1:
+                break
+            if k > 0 and ln[k - 1] == '\\':
+                j = k + 1
+                continue
+            in_tpl = not in_tpl
+            j = k + 1
+    return in_tpl
+
+
 def _block_similarity(a: List[str], b: List[str]) -> float:
     return difflib.SequenceMatcher(a=a, b=b).ratio()
 
@@ -191,6 +208,9 @@ def restore_file_from_ref(file_path: str, ref_text: str, head_text: str) -> Tupl
             for off in range(k):
                 hln = hs[off]
                 rln = rs[off]
+
+                if _in_template_literal(head_lines, i1 + a1 + off) or _in_template_literal(ref_lines, j1 + b1 + off):
+                    continue
 
                 if _count_t_calls([rln]) == 0:
                     continue
