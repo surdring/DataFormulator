@@ -59,6 +59,7 @@ import MovingIcon from '@mui/icons-material/Moving';
 import RotateRightIcon from '@mui/icons-material/RotateRight';
 import EditIcon from '@mui/icons-material/Edit';
 import { ThinkingBufferEffect } from '../components/FunComponents';
+import { t } from '../i18n';
 
 // when this is set to true, the new chart will be focused automatically
 const AUTO_FOCUS_NEW_CHART = false;
@@ -125,7 +126,7 @@ const NLTableSelector: FC<{
                     />
                 );
             })}
-            <Tooltip title="select tables for data formulation">
+            <Tooltip title={t('chart.nlTable.tooltip.selectTables')}>
                 <IconButton
                     size="small"
                     onClick={handleClick}
@@ -409,6 +410,7 @@ export const ChartRecBox: FC<ChartRecBoxProps> = function ({ tableId, placeHolde
             const messageBody = JSON.stringify({
                 token: String(Date.now()),
                 model: activeModel,
+                ui_language: navigator.language,
                 start_question: startQuestion,
                 mode: mode,
                 input_tables: sourceTables.map(t => ({
@@ -455,7 +457,13 @@ export const ChartRecBox: FC<ChartRecBoxProps> = function ({ tableId, placeHolde
             let updateState = (lines: string[]) => {
                 let dataBlocks = lines
                     .map(line => {
-                        try { return JSON.parse(line.trim()); } catch (e) { return null; }})
+                        try {
+                            return JSON.parse(line.trim());
+                        } catch (e) {
+                            console.warn('Failed to parse idea JSON chunk:', line.slice(0, 400));
+                            return null;
+                        }
+                    })
                     .filter(block => block != null);
 
                 if (mode === "agent") {
@@ -492,19 +500,47 @@ export const ChartRecBox: FC<ChartRecBoxProps> = function ({ tableId, placeHolde
                     if (done) { break; }
 
                     buffer += decoder.decode(value, { stream: true });
-                    let newLines = buffer.split('data: ').filter(line => line.trim() !== "");
-                    buffer = newLines.pop() || '';
-                    if (newLines.length > 0) {
-                        lines.push(...newLines);
+
+                    // Parse SSE events: events are separated by a blank line (\n\n)
+                    let events = buffer.split("\n\n");
+                    buffer = events.pop() || "";
+
+                    for (const ev of events) {
+                        const evLines = ev.split("\n");
+                        const dataPayload = evLines
+                            .filter(l => l.startsWith("data:"))
+                            .map(l => l.slice("data:".length).trim())
+                            .join("\n");
+
+                        if (dataPayload) {
+                            lines.push(dataPayload);
+                        }
+                    }
+
+                    if (events.length > 0) {
                         updateState(lines);
                     }
-                    setThinkingBuffer(buffer.replace(/^data: /, ""));
+
+                    // For UI thinking buffer, show the raw pending buffer tail
+                    setThinkingBuffer(buffer);
                 }
             } finally {
                 reader.releaseLock();
             }
 
-            lines.push(buffer);
+            // Flush the remaining buffer (in case the last SSE event didn't end with \n\n)
+            if (buffer.trim()) {
+                const evLines = buffer.split("\n");
+                const dataPayload = evLines
+                    .filter(l => l.startsWith("data:"))
+                    .map(l => l.slice("data:".length).trim())
+                    .join("\n");
+                if (dataPayload) {
+                    lines.push(dataPayload);
+                } else {
+                    console.warn('SSE tail without data: prefix:', buffer.slice(0, 400));
+                }
+            }
             updateState(lines);
 
             // Process the final result
@@ -1281,7 +1317,7 @@ export const ChartRecBox: FC<ChartRecBoxProps> = function ({ tableId, placeHolde
                         slotProps={{
                             inputLabel: { shrink: true },
                             input: {
-                                endAdornment: <Tooltip title="Generate chart from description">
+                                endAdornment: <Tooltip title={t('chart.prompt.tooltip.generate')}>
                                     <span>
                                         <IconButton 
                                             size="medium"
@@ -1322,7 +1358,7 @@ export const ChartRecBox: FC<ChartRecBoxProps> = function ({ tableId, placeHolde
                         <Typography sx={{ fontSize: 10, color: "text.secondary", marginBottom: 0.5 }}>
                             ideas?
                         </Typography>
-                        <Tooltip title="Get some ideas!">   
+                        <Tooltip title={t('chart.ideas.tooltip.getSome')}>   
                             <span>
                                 <IconButton 
                                     size="medium"

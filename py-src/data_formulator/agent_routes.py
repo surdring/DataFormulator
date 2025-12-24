@@ -60,9 +60,21 @@ def get_client(model_config):
         "endpoint": model_config.get("endpoint", ""),
         "model": model_config.get("model", ""),
         "api_key": model_config.get("api_key", ""),
-        "api_base": html.escape(model_config.get("api_base", "")),
+        "api_base": model_config.get("api_base", ""),
         "api_version": model_config.get("api_version", ""),
     }
+
+    # Debug log: do not log API key
+    try:
+        logger.info(
+            "LLM client config: endpoint=%s model=%s api_base=%s api_version=%s",
+            clean_config.get("endpoint"),
+            clean_config.get("model"),
+            clean_config.get("api_base"),
+            clean_config.get("api_version"),
+        )
+    except Exception:
+        pass
 
     return Client.from_config(clean_config)
 
@@ -156,22 +168,48 @@ def test_model():
             )
 
             logger.info(f"model: {content['model']}")
-            logger.info(f"welcome message: {response.choices[0].message.content}")
+            content_text = ""
+            try:
+                content_text = (response.choices[0].message.content or "").strip()
+            except Exception:
+                content_text = ""
+            logger.info(f"welcome message: {content_text}")
 
-            if "I can hear you." in response.choices[0].message.content:
+            # Connectivity test: for local/openai-compatible servers (e.g. llama.cpp),
+            # do not require exact string match. Any successful completion is OK.
+            if response is not None and getattr(response, "choices", None):
                 result = {
                     "model": content['model'],
                     "status": 'ok',
                     "message": ""
                 }
+            else:
+                result = {
+                    "model": content['model'],
+                    "status": 'error',
+                    "message": "Model did not respond correctly"
+                }
         except Exception as e:
-            print(f"Error: {e}")
-            logger.info(f"Error: {e}")
+            try:
+                cfg = content.get('model', {}) if isinstance(content, dict) else {}
+                logger.exception(
+                    "test-model failed: endpoint=%s model=%s api_base=%s api_version=%s err=%s",
+                    cfg.get('endpoint'),
+                    cfg.get('model'),
+                    cfg.get('api_base'),
+                    cfg.get('api_version'),
+                    sanitize_model_error(f"{type(e).__name__}: {e}"),
+                )
+            except Exception:
+                pass
+
             result = {
                 "model": content['model'],
                 "status": 'error',
-                "message": sanitize_model_error(str(e)),
+                "message": sanitize_model_error(str(e))
             }
+
+        return json.dumps(result)
     else:
         result = {'status': 'error'}
     
@@ -688,6 +726,11 @@ def get_recommendation_questions():
                 db_conn = None
 
             agent_exploration_rules = content.get("agent_exploration_rules", "")
+            ui_language = content.get("ui_language") or content.get("locale") or request.headers.get("Accept-Language", "")
+            if isinstance(ui_language, str) and "zh" in ui_language.lower():
+                agent_exploration_rules = (agent_exploration_rules + "\n\n" if agent_exploration_rules else "") + (
+                    "All outputs (text/goal/difficulty/tag) must be in Chinese."
+                )
             agent = InteractiveExploreAgent(client=client, agent_exploration_rules=agent_exploration_rules, db_conn=db_conn)
 
             # Get input tables from the request
@@ -701,24 +744,62 @@ def get_recommendation_questions():
             current_data_sample = content.get("current_data_sample", None)
 
             try:
+                # agent.run 会以 stream=True 的方式逐 token/逐字符 yield。
+                # 这里必须按“行”缓冲：只有收齐完整的 `data: {json}` 一行后，
+                # 才作为一个 SSE event 输出，否则浏览器会看到 `data: data`、`data: :` 等碎片。
+                buf = ""
                 for chunk in agent.run(input_tables, start_question, exploration_thread, current_data_sample, current_chart, mode):
-                    yield chunk
+                    if isinstance(chunk, bytes):
+                        chunk = chunk.decode('utf-8', errors='replace')
+                    buf += str(chunk)
+
+                    while "\n" in buf:
+                        line, buf = buf.split("\n", 1)
+                        line = line.rstrip("\r")
+                        if not line.strip():
+                            continue
+
+                        # 期望模型输出格式：data: { ...json... }
+                        if line.startswith("data:"):
+                            payload = line[len("data:"):].strip()
+                            if payload:
+                                yield "data: " + payload + "\n\n"
+                        else:
+                            # 兼容模型偶尔直接输出 JSON 行（无 data: 前缀）
+                            payload = line.strip()
+                            if payload.startswith("{") or payload.startswith("["):
+                                yield "data: " + payload + "\n\n"
+
+                # Flush remaining buffer if the model didn't end with a newline
+                tail = buf.strip()
+                if tail:
+                    if tail.startswith("data:"):
+                        payload = tail[len("data:"):].strip()
+                        if payload:
+                            yield "data: " + payload + "\n\n"
+                    elif tail.startswith("{") or tail.startswith("["):
+                        yield "data: " + tail + "\n\n"
             except Exception as e:
                 logger.error(e)
-                error_data = { 
-                    "content": "unable to process recommendation questions request" 
+                error_data = {
+                    "type": "error",
+                    "content": "unable to process recommendation questions request"
                 }
-                yield 'error: ' + json.dumps(error_data) + '\n'
+                yield 'data: ' + json.dumps(error_data) + '\n\n'
         else:
             error_data = { 
                 "content": "Invalid request format" 
             }
-            yield 'error: ' + json.dumps(error_data) + '\n'
+            yield 'data: ' + json.dumps({"type": "error", **error_data}) + '\n\n'
 
     response = Response(
         stream_with_context(generate()),
-        mimetype='application/json',
-        headers={ 'Access-Control-Allow-Origin': '*',  }
+        mimetype='text/event-stream',
+        headers={
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+        }
     )
     return response
 

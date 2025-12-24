@@ -83,6 +83,7 @@ import { dfSelectors } from '../app/dfSlice';
 import { ChartRecBox } from './ChartRecBox';
 import { CodeExplanationCard, ConceptExplCards, extractConceptExplanations } from './ExplComponents';
 import CodeIcon from '@mui/icons-material/Code';
+import { t } from '../i18n';
 
 export interface VisPanelProps { }
 
@@ -605,7 +606,7 @@ export const ChartEditorFC: FC<{}> = function ChartEditorFC({}) {
 
 
     let deleteButton = (
-        <Tooltip title="delete" key="delete-btn-tooltip">
+        <Tooltip title={t('common.delete')} key="delete-btn-tooltip">
             <span>
                 <IconButton color="warning" size="small" sx={{ textTransform: "none" }}  disabled={trigger != undefined}
                             onClick={() => { handleDeleteChart() }}>
@@ -793,7 +794,7 @@ export const ChartEditorFC: FC<{}> = function ChartEditorFC({}) {
                     <Typography component="span" fontSize="small" color="text.secondary" sx={{textAlign:'center'}}>
                         sample rows
                     </Typography>
-                    <Tooltip title="sample again!">
+                    <Tooltip title={t('vis.sample.tooltip.resample')}>
                         <IconButton size="small" color="primary" onClick={() => {
                             fetchDisplayRows(activeVisTableRows.length);
                         }}>
@@ -965,7 +966,7 @@ export const ChartEditorFC: FC<{}> = function ChartEditorFC({}) {
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
         borderRadius: '4px',
     }} alignItems="center">
-        <Tooltip key="zoom-out-tooltip" title="zoom out">
+        <Tooltip key="zoom-out-tooltip" title={t('vis.zoom.out')}>
             <span>
                 <IconButton color="primary" size='small' disabled={localScaleFactor <= scaleMin} onClick={() => {
                     setLocalScaleFactor(prev => Math.max(scaleMin, prev - 0.1));
@@ -978,7 +979,7 @@ export const ChartEditorFC: FC<{}> = function ChartEditorFC({}) {
                 value={localScaleFactor} onChange={(event: Event, newValue: number | number[]) => {
             setLocalScaleFactor(newValue as number);
         }} />
-        <Tooltip key="zoom-in-tooltip" title="zoom in">
+        <Tooltip key="zoom-in-tooltip" title={t('vis.zoom.in')}>
             <span>
                 <IconButton color="primary" size='small' disabled={localScaleFactor >= scaleMax} onClick={() => {
                     setLocalScaleFactor(prev => Math.min(scaleMax, prev + 0.1));

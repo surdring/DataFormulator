@@ -52,6 +52,7 @@ import AnimateHeight from 'react-animate-height';
 import { getIconFromDtype, getIconFromType, groupConceptItems } from './ViewUtils';
 import { getUrls } from '../app/utils';
 import { Type } from '../data/types';
+import { t } from '../i18n';
 
 
 
@@ -420,7 +421,7 @@ export const EncodingBox: FC<EncodingBoxProps> = function EncodingBox({ channel,
                         value={JSON.stringify(autoSortResult)} control={<Radio size="small" sx={{ padding: "4px" }} />}
                         label={<Box sx={{width: '100%', display:'flex'}}>
                                     {autoSortOpt}
-                                    <Tooltip title='rerun smart sort'>
+                                    <Tooltip title={t('encoding.sort.button.infer')}>
                                         <IconButton onClick={autoSortFunction} size='small' color='primary'>
                                             <RefreshIcon />
                                         </IconButton>
@@ -435,7 +436,7 @@ export const EncodingBox: FC<EncodingBoxProps> = function EncodingBox({ channel,
                         value={JSON.stringify(autoSortResult)} control={<Radio size="small" sx={{ padding: "4px" }} />}
                         label={<Button size="small" variant="text"
                                     sx={{ textTransform: "none", padding: "2px 4px", marginLeft: "0px", minWidth: 0 }}
-                                    onClick={autoSortFunction}>infer smart sort order</Button>} />
+                                    onClick={autoSortFunction}>{t('encoding.sort.button.infer')}</Button>} />
                 ]
             }
         }
@@ -464,7 +465,7 @@ export const EncodingBox: FC<EncodingBoxProps> = function EncodingBox({ channel,
 
     let sortOrderOpt = [
         <FormLabel sx={{ fontSize: "inherit" }} key={`enc-box-${channel}-sort-order-label`} 
-                   id="sort-option-radio-buttons-group" >Sort Order</FormLabel>,
+                   id="sort-option-radio-buttons-group" >{t('encoding.label.sortOrder')}</FormLabel>,
         <FormControl
             key={`enc-box-${channel}-sort-order-form-control`}
             sx={{
@@ -512,7 +513,7 @@ export const EncodingBox: FC<EncodingBoxProps> = function EncodingBox({ channel,
                     value={encoding.scheme || "default"}
                     onChange={(event)=>{ updateEncProp("scheme", event.target.value) }}
                 >
-                    <MenuItem value={"default"} key={"color-scheme--1"}><em>default</em></MenuItem>
+                    <MenuItem value={"default"} key={"color-scheme--1"}><em>{t('encoding.colorScheme.default')}</em></MenuItem>
                     {colorSchemeList.map((t, i) => (
                         <MenuItem value={t} key={`color-scheme-${i}`}>{t}</MenuItem>
                     ))}

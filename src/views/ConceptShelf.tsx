@@ -32,6 +32,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ListIcon from '@mui/icons-material/List';
+import { t } from '../i18n';
 
 export const genFreshCustomConcept : () => FieldItem = () => {
     return {
@@ -85,7 +86,7 @@ export const ConceptGroup: FC<{groupName: string, fields: FieldItem[]}> = functi
                         </Typography>}
                     </Typography>
                     {groupName === "new fields" && (
-                        <Tooltip title="clean up unused fields">
+                        <Tooltip title={t('concept.cleanUnused.tooltip')}>
                             <IconButton
                                 size="small"
                                 onClick={(e) => {
@@ -246,7 +247,7 @@ export const ConceptShelf: FC<ConceptShelfProps> = function ConceptShelf() {
         overflow: 'hidden',
         position: 'relative',
     }}>
-        <Tooltip placement="left" title={conceptPanelOpen ? "hide concept panel" : "open concept panel"}>
+        <Tooltip placement="left" title={conceptPanelOpen ? t('concept.panel.tooltip.hide') : t('concept.panel.tooltip.open')}>
             <IconButton 
                 color="primary"
                 sx={conceptPanelOpen ? {

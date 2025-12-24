@@ -186,7 +186,7 @@ class InteractiveExploreAgent(object):
                     {"role": "user", "content": context}
                 ]
             # Get completion from client
-            stream = self.client.get_completion(messages=messages, stream=True)
+            stream = self.client.get_completion(messages=messages, stream=True, max_tokens=1536)
         except Exception as e:
             # if the model doesn't accept image, just use the text context
             messages = [
@@ -194,7 +194,7 @@ class InteractiveExploreAgent(object):
                 {"role": "user", "content": context}
             ]
             # Get completion from client
-            stream = self.client.get_completion(messages=messages, stream=True)
+            stream = self.client.get_completion(messages=messages, stream=True, max_tokens=1536)
 
         accumulated_content = ""
         

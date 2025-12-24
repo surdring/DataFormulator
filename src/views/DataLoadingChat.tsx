@@ -14,6 +14,7 @@ import { AppDispatch } from '../app/store';
 import { DataFormulatorState, dfActions, fetchFieldSemanticType } from '../app/dfSlice';
 import { createTableFromText } from '../data/utils';
 import { createOrderedThreadBlocks, DataLoadingInputBox, DataPreviewBox, SingleDataCleanThreadView } from './DataLoadingThread';
+import { t } from '../i18n';
 
 
 const generateDefaultName = (seed: string) => {
@@ -317,7 +318,7 @@ export const DataLoadingChatDialog: React.FC<DataLoadingChatDialogProps> = ({
             >
                 <DialogTitle sx={{display: "flex"}}>
                     Extract Data
-                    {dataCleanBlocks.length > 0 && <Tooltip title="Reset dialog">  
+                    {dataCleanBlocks.length > 0 && <Tooltip title={t('dataLoading.dialog.resetTooltip')}>  
                         <IconButton size="small" color='warning' 
                             sx={{
                             '&:hover': {  transform: 'rotate(180deg)', 

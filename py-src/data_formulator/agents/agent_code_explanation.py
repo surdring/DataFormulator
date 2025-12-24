@@ -188,7 +188,7 @@ class CodeExplanationAgent(object):
         messages = [{"role":"system", "content": SYSTEM_PROMPT},
                     {"role":"user","content": user_query}]
         
-        response = self.client.get_completion(messages = messages)
+        response = self.client.get_completion(messages = messages, max_tokens=8192)
 
         candidates = []
         for choice in response.choices:
@@ -211,22 +211,25 @@ class CodeExplanationAgent(object):
                     code_explanation = response_content[code_start:concepts_start].strip()
                 else:
                     code_explanation = response_content[code_start:].strip()
+            else:
+                code_explanation = response_content.strip()
 
             # Find CONCEPTS EXPLANATION section
             concepts_start = response_content.find('[CONCEPTS EXPLANATION]')
             if concepts_start != -1:
                 concepts_start += len('[CONCEPTS EXPLANATION]')
-                # Extract JSON from the concepts section
                 concepts_content = response_content[concepts_start:].strip()
-                try:
-                    # Escape backslashes by doubling them
-                    raw_json_blocks = extract_code_from_gpt_response(concepts_content, "json")
-                    json_blocks = [json.loads(block) for block in raw_json_blocks]
-                except Exception as e:
-                    json_blocks = []
+            else:
+                concepts_content = response_content.strip()
 
-                if json_blocks:
-                    concepts = json_blocks[0]
+            try:
+                raw_json_blocks = extract_code_from_gpt_response(concepts_content, "json")
+                json_blocks = [json.loads(block) for block in raw_json_blocks]
+            except Exception as e:
+                json_blocks = []
+
+            if json_blocks:
+                concepts = json_blocks[0]
             
             # Build result
             if code_explanation or concepts != []:

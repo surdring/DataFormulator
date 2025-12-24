@@ -68,6 +68,7 @@ import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturi
 import CheckIcon from '@mui/icons-material/Check';
 import MuiMarkdown from 'mui-markdown';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
+import { t } from '../i18n';
 
 export const handleDBDownload = async (sessionId: string) => {
     try {
@@ -556,7 +557,7 @@ export const DBTableSelectionDialog: React.FC<{
     }, [tableDialogOpen]);
 
     let importButton = (buttonElement: React.ReactNode) => {
-        return <Tooltip title="import a duckdb .db file to the local database">
+        return <Tooltip title={t('session.importDb')}>
             <span>
                 <Button variant="text" sx={{fontSize: "inherit", minWidth: "auto"}} component="label" disabled={isUploading}>
                     {buttonElement}
@@ -567,7 +568,7 @@ export const DBTableSelectionDialog: React.FC<{
     }
 
     let exportButton = 
-        <Tooltip title="save the local database to a duckdb .db file">
+        <Tooltip title={t('session.downloadDb')}>
             <span>
                 <Button variant="text" size="small" onClick={() => {
                     handleDBDownload(sessionId ?? '')
@@ -583,7 +584,7 @@ export const DBTableSelectionDialog: React.FC<{
 
     function uploadFileButton(element: React.ReactNode, buttonSx?: SxProps) {
         return (
-            <Tooltip title="upload a csv/tsv file to the local database">
+            <Tooltip title={t('db.upload.cta')}>
                 <span>
                     <Button
                         variant="text"
@@ -667,7 +668,7 @@ export const DBTableSelectionDialog: React.FC<{
             }}>
                 Data Tables
             </Typography>
-            <Tooltip title="refresh the table list">
+            <Tooltip title={t('db.sidebar.refreshTables')}>
                 <IconButton size="small" color="primary" sx={{
                     '&:hover': {
                         transform: 'rotate(180deg)',
@@ -735,7 +736,7 @@ export const DBTableSelectionDialog: React.FC<{
                     }}>
                         Derived Views
                     </Typography>
-                    <Tooltip title="clean up unreferenced derived views">
+                    <Tooltip title={t('db.sidebar.cleanDerivedViewsTooltip')}>
                         <IconButton size="small" color="primary" sx={{
                             '&:hover': {
                                 transform: 'rotate(180deg)',
@@ -937,7 +938,7 @@ export const DBTableSelectionDialog: React.FC<{
                     {tableSelectionPanel}
                 </Box>
                 <Typography variant="caption" sx={{ mr: 'auto', mt: 'auto', mb: 1, textWrap: 'wrap', '& .MuiButton-root': { minWidth: 'auto',  textTransform: "none" } }}>
-                    {importButton(<Typography component="span" fontSize="inherit">Import</Typography>)}
+                    {importButton(<Typography component="span" fontSize="inherit">{t('session.importDb')}</Typography>)}
                     ,
                     {exportButton}
                     or

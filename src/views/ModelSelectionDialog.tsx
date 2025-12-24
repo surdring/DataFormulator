@@ -57,6 +57,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import { getUrls } from '../app/utils';
+import { t } from '../i18n';
 
 
 const decodeHtmlEntities = (text: string): string => {
@@ -289,7 +290,7 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
             />
         </TableCell>
         <TableCell align="right">
-            <Tooltip title={modelExists ? "provider + model already exists" : "add and test model"}>
+            <Tooltip title={modelExists ? t('models.tooltip.modelExists') : t('models.tooltip.addTest')}>
                 <span>  
                     <IconButton color={modelExists ? 'error' : 'primary'}
                         disabled={!readyToTest}
@@ -345,7 +346,7 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
             </Tooltip>
         </TableCell>
         <TableCell align="right">
-            <Tooltip title={"clear"}>
+            <Tooltip title={t('models.new.clear')}>
                 <IconButton 
                     onClick={(event) => {
                         event.stopPropagation()
@@ -476,7 +477,7 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
                                 </Tooltip>
                             </TableCell>
                             <TableCell sx={{ borderBottom: borderStyle }} align="right">
-                                <Tooltip title="remove model">
+                                <Tooltip title={t('models.tooltip.remove')}>
                                     <IconButton 
                                         size="small"
                                         onClick={()=>{
@@ -518,7 +519,7 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
     let selectedModelName = models.find(m => m.id == selectedModelId)?.model || 'Unselected';
 
     return <>
-        <Tooltip title="Select a model">
+        <Tooltip title={t('models.button.tooltip')}>
             <Button sx={{fontSize: "inherit", textTransform: "none"}} variant="text" color={modelNotReady ? 'warning' : "primary"} onClick={()=>{setModelDialogOpen(true)}}>
                 {modelNotReady ? 'Select Models' : selectedModelName}
             </Button>
@@ -582,11 +583,11 @@ export const ModelSelectionButton: React.FC<{}> = ({ }) => {
                     variant={modelNotReady ? 'text' : 'contained'}
                     onClick={()=>{
                         dispatch(dfActions.selectModel(tempSelectedModelId));
-                        setModelDialogOpen(false);}}>Use {tempModelName}</Button>
+                        setModelDialogOpen(false);}}>{t('models.button.applySlots')}</Button>
                 <Button onClick={()=>{
                     setTempSelectedModelId(selectedModelId);
                     setModelDialogOpen(false);
-                }}>cancel</Button>
+                }}>{t('models.button.cancel')}</Button>
             </DialogActions>
         </Dialog>
     </>;

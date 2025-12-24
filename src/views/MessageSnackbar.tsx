@@ -23,6 +23,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import { useTheme } from '@mui/material/styles';
+import { t } from '../i18n';
 
 export interface Message {
     type: "success" | "info" | "error" | "warning",
@@ -142,7 +143,7 @@ export function MessageSnackbar() {
             boxShadow: '0 0 10px rgba(0,0,0,0.1)',
             transition: 'all 0.3s ease'
         }}}>
-            <Tooltip placement="left" title="view system messages">
+            <Tooltip placement="left" title={t('messages.panel.tooltip.view')}>
                 <IconButton 
                     className='snackbar-button'
                     color="warning"
@@ -170,7 +171,7 @@ export function MessageSnackbar() {
                         <Typography variant="subtitle1" sx={{fontSize: 12, flexGrow: 1, color: 'text.secondary'}}>
                             system messages ({messages.length})
                         </Typography>
-                        <Tooltip title="clear all messages">
+                        <Tooltip title={t('messages.panel.clearAll')}>
                             <IconButton
                                 size="small"
                                 color="warning"

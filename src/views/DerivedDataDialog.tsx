@@ -32,6 +32,7 @@ import { CustomReactTable } from './ReactTable';
 
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
+import { t } from '../i18n';
 
 export interface DerivedDataDialogProps {
     chart: Chart,
@@ -178,13 +179,13 @@ export const DerivedDataDialog: FC<DerivedDataDialogProps> = function DerivedDat
             maxWidth={false}
             open={open}
         >
-            <DialogTitle><Typography>Derived Data Candidates</Typography></DialogTitle>
+            <DialogTitle><Typography>{t('derivedData.dialog.title')}</Typography></DialogTitle>
             <DialogContent sx={{overflowX: "hidden"}} dividers>
                 {body}
             </DialogContent>
             <DialogActions>
-                <Button onClick={()=>{ handleCloseDialog() }}>Cancel</Button>
-                <Button onClick={() => { handleSelection(selectionIdx)} }>Ok</Button>
+                <Button onClick={()=>{ handleCloseDialog() }}>{t('common.cancel')}</Button>
+                <Button onClick={() => { handleSelection(selectionIdx)} }>{t('common.ok')}</Button>
             </DialogActions>
         </Dialog>
     );

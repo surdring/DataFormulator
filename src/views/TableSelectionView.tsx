@@ -25,6 +25,7 @@ import { DataFormulatorState, dfActions, dfSelectors, fetchFieldSemanticType } f
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect, useState, useCallback } from 'react';
 import { AppDispatch } from '../app/store';
+import { t } from '../i18n';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -542,10 +543,10 @@ export const TableURLDialog: React.FC<TableURLDialogProps> = ({ buttonElement, d
                 <TextField error={tableURL != "" && !hasValidSuffix} autoFocus placeholder='Please enter URL of the dataset' 
                             helperText={hasValidSuffix ? "" : "the url should links to a csv, tsv or json file"}
                             sx={{marginBottom: 1}} size="small" value={tableURL} onChange={(event) => { setTableURL(event.target.value.trim()); }} 
-                            id="dataset-url" label="data url" variant="outlined" />
+                            id="dataset-url" label={t('dataset.urlDialog.label')} variant="outlined" />
             </ DialogContent>
             <DialogActions>
-                <Button variant="contained" size="small" onClick={()=>{ setDialogOpen(false); }}>cancel</Button>
+                <Button variant="contained" size="small" onClick={()=>{ setDialogOpen(false); }}>{t('common.cancel')}</Button>
                 <Button variant="contained" size="small" onClick={()=>{ setDialogOpen(false); handleSubmitContent(); }} >
                     upload
                 </Button>
@@ -778,7 +779,7 @@ export const TableCopyDialogV2: React.FC<TableCopyDialogProps> = ({
             </DialogContent>
             <DialogActions>
                 <Button variant="text" sx={{textTransform: 'none'}} size="small" onClick={handleCloseDialog}>cancel</Button>
-                <Tooltip title={isOverSizeLimit ? `Content exceeds ${(MAX_CONTENT_SIZE / (1024 * 1024)).toFixed(0)}MB size limit` : ""} placement="top">
+                <Tooltip title={isOverSizeLimit ? `${t('upload.sizeLimit.prefix')}${(MAX_CONTENT_SIZE / (1024 * 1024)).toFixed(0)}${t('upload.sizeLimit.suffix')}` : ""} placement="top">
                     <span>
                         <Button disabled={tableContentType != "text" || tableContent.trim() == "" || isOverSizeLimit} variant="contained" sx={{textTransform: 'none'}} size="small" 
                             onClick={()=>{ 

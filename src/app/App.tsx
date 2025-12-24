@@ -512,7 +512,7 @@ const ConfigDialog: React.FC = () => {
                                 />
                             </Box>
                         </Box>
-                        <Divider><Typography variant="caption">Backend</Typography></Divider>
+                        <Divider><Typography variant="caption">{t('settings.backend')}</Typography></Divider>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Box sx={{ flex: 1 }}>
                                 <TextField
@@ -575,8 +575,8 @@ const ConfigDialog: React.FC = () => {
                         setMaxRepairAttempts(1);
                         setDefaultChartWidth(300);
                         setDefaultChartHeight(300);
-                    }}>Reset to default</Button>
-                    <Button onClick={() => setOpen(false)}>Cancel</Button>
+                    }}>{t('settings.resetToDefault')}</Button>
+                    <Button onClick={() => setOpen(false)}>{t('common.cancel')}</Button>
                     <Button 
                         variant={hasChanges ? "contained" : "text"}
                         disabled={!hasChanges || isNaN(maxRepairAttempts) || maxRepairAttempts <= 0 || maxRepairAttempts > 5 
@@ -794,7 +794,7 @@ export const AppFC: FC<AppFCProps> = function AppFC(appProps) {
                             <ToggleButton value="report">
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Box component="span">
-                                        {generatedReports.length > 0 ? `Reports (${generatedReports.length})` : 'Reports'}
+                                        {generatedReports.length > 0 ? `${t('viewMode.report')} (${generatedReports.length})` : t('viewMode.report')}
                                     </Box>
                                 </Box>
                             </ToggleButton>
@@ -818,7 +818,7 @@ export const AppFC: FC<AppFCProps> = function AppFC(appProps) {
                 )}
                 {isAboutPage && (
                     <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5 }}>
-                        <Tooltip title="Watch Video">
+                        <Tooltip title={t('nav.tooltip.watchVideo')}>
                             <IconButton
                                 component="a"
                                 href="https://youtu.be/3ndlwt0Wi3c"
@@ -835,7 +835,7 @@ export const AppFC: FC<AppFCProps> = function AppFC(appProps) {
                                 <YouTubeIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="View on GitHub">
+                        <Tooltip title={t('nav.tooltip.viewOnGitHub')}>
                             <IconButton
                                 component="a"
                                 href="https://github.com/microsoft/data-formulator"
@@ -852,7 +852,7 @@ export const AppFC: FC<AppFCProps> = function AppFC(appProps) {
                                 <GitHubIcon fontSize="small" />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Pip Install">
+                        <Tooltip title={t('nav.tooltip.pipInstall')}>
                             <IconButton
                                 component="a"
                                 href="https://pypi.org/project/data-formulator/"
@@ -869,7 +869,7 @@ export const AppFC: FC<AppFCProps> = function AppFC(appProps) {
                                 <Box component="img" src="/pip-logo.svg" sx={{ width: 20, height: 20 }} alt="pip logo" />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Join Discord">
+                        <Tooltip title={t('nav.tooltip.joinDiscord')}>
                             <IconButton
                                 component="a"
                                 href="https://discord.gg/mYCZMQKYZb"
@@ -889,7 +889,7 @@ export const AppFC: FC<AppFCProps> = function AppFC(appProps) {
                     </Box>
                 )}
                 {!isAboutPage && (
-                    <Tooltip title="View on GitHub">
+                    <Tooltip title={t('nav.tooltip.viewOnGitHub')}>
                         <Button
                             component="a"
                             href="https://github.com/microsoft/data-formulator"

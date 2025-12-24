@@ -18,6 +18,7 @@ import { InlineMath, BlockMath } from 'react-katex';
 
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import InfoIcon from '@mui/icons-material/Info';
+import { t } from '../i18n';
 
 // Helper function to render text with LaTeX math expressions
 const renderWithMath = (text: string) => {
@@ -227,7 +228,7 @@ export const ConceptExplCards: FC<ConceptExplCardsProps> = ({
                         borderTop: '1px solid',
                         borderColor: 'divider',
                     }}>
-                        <Tooltip title={expanded ? "Show fewer concepts" : "Show all concepts"}>
+                        <Tooltip title={expanded ? t('expl.concepts.tooltip.showFewer') : t('expl.concepts.tooltip.showAll')}>
                             <IconButton
                                 size="small"
                                 onClick={() => setExpanded(!expanded)}

@@ -21,6 +21,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useDispatch, useSelector } from 'react-redux';
 import { DataFormulatorState, dfActions } from '../app/dfSlice';
 import Editor from 'react-simple-code-editor';
+import { t } from '../i18n';
 
 export const AgentRulesDialog: React.FC = () => {
     const theme = useTheme();
@@ -130,7 +131,7 @@ export const AgentRulesDialog: React.FC = () => {
                 maxWidth={false}
             >
                 <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6">Agent Rules</Typography>
+                    <Typography variant="h6">{t('agentRules.title')}</Typography>
                     <IconButton
                         aria-label="close"
                         onClick={handleClose}

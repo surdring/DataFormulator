@@ -69,6 +69,8 @@ SYSTEM_PROMPT = """
 - **始终使用简体中文输出**；
 - 报告使用 Markdown 格式（# 标题、## 小节、项目符号列表等）；
 - 在引用具体图表时，用自然语言描述图表包含的信息和你观察到的现象，不需要输出图表代码；
+- 当你希望在报告中插入某个图表时，必须在合适位置单独一行输出占位符：`[IMAGE(chart_id)]`。
+  其中 `chart_id` 必须来自用户提供的图表信息（例如：`chart_id: <...>`），并保持格式完全一致；
 - 如有不确定之处，要明确指出假设、数据限制或可能的偏差来源；
 - 尊重数据事实，不捏造不存在的数据或结论；
 - 对可能涉及敏感群体或数据偏差的部分，应提醒读者谨慎解读。
@@ -250,7 +252,7 @@ class ReportGenAgent(object):
         ]
         
         ###### the part that calls open_ai
-        stream = self.client.get_completion(messages = messages, stream=True)
+        stream = self.client.get_completion(messages = messages, stream=True, max_tokens=4096)
 
         accumulated_content = ""
         

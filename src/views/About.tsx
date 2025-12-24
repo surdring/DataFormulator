@@ -14,6 +14,7 @@ import dfLogo from '../assets/df-logo.png';
 import { toolName } from "../app/App";
 import { useSelector } from "react-redux";
 import { DataFormulatorState } from "../app/dfSlice";
+import { t } from '../i18n';
 
 
 interface Feature {
@@ -132,7 +133,7 @@ export const About: FC<{}> = function About({ }) {
             <Button size="large" variant="contained" color="primary" 
                 startIcon={<PrecisionManufacturingIcon sx={{ fontSize: '1rem' }} />}
                 href="/app"
-            >Start Exploration</Button>
+            >{t('about.hero.button.start')}</Button>
         </Box>
     ) : (
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 4, flexWrap: 'wrap', '.MuiButton-root': { textTransform: 'none' } }}>
@@ -141,20 +142,20 @@ export const About: FC<{}> = function About({ }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 href="https://www.youtube.com/watch?v=GfTE2FLyMrs"
-            >What's New in v0.5?</Button>
+            >{t('about.hero.button.whatsNew')}</Button>
             <Button size="large" variant="outlined" color="primary" 
                 startIcon={<GitHubIcon sx={{ fontSize: '1rem', color: '#000000' }} />}
                 target="_blank"
                 rel="noopener noreferrer"
                 href="https://github.com/microsoft/data-formulator"
-            >GitHub</Button>
+            >{t('about.hero.button.github')}</Button>
             <Divider orientation="vertical" sx={{ mx: 1 }} flexItem />
             <Button size="large" variant="outlined" color="primary" 
                 startIcon={<Box component="img" sx={{ width: 24, height: 24 }} alt="" src="/pip-logo.svg" />}
                 target="_blank"
                 rel="noopener noreferrer"
                 href="https://pypi.org/project/data-formulator/"
-            >Install Locally</Button>
+            >{t('about.hero.button.installLocally')}</Button>
             <Button size="large" variant="outlined" color="primary" 
                 sx={{
                     animation: 'subtleGlow 2s ease-in-out infinite',
@@ -173,7 +174,7 @@ export const About: FC<{}> = function About({ }) {
                 }}
                 startIcon={<GridViewIcon sx={{ fontSize: '1rem' }} />}
                 href="/app"
-            >Try Online Demo</Button>
+            >{t('about.hero.button.tryOnlineDemo')}</Button>
             <Typography variant="caption" sx={{ mt: 1.5, color: 'text.secondary', fontStyle: 'italic' }}>
                 Psst — install locally for the full experience ✨. The online demo has limited features (at the moment).
             </Typography>
@@ -480,17 +481,17 @@ export const About: FC<{}> = function About({ }) {
                 <Button size="small" color="inherit" 
                         sx={{ textTransform: 'none'}} 
                         target="_blank" rel="noopener noreferrer" 
-                        href="https://www.microsoft.com/en-us/privacy/privacystatement">Privacy & Cookies</Button>
+                        href="https://www.microsoft.com/en-us/privacy/privacystatement">{t('footer.privacy')}</Button>
                 <Divider orientation="vertical" variant="middle" flexItem sx={{ mx: 1 }} />
                 <Button size="small" color="inherit" 
                         sx={{ textTransform: 'none'}} 
                         target="_blank" rel="noopener noreferrer" 
-                        href="https://www.microsoft.com/en-us/legal/intellectualproperty/copyright">Terms of Use</Button>
+                        href="https://www.microsoft.com/en-us/legal/intellectualproperty/copyright">{t('footer.terms')}</Button>
                 <Divider orientation="vertical" variant="middle" flexItem sx={{ mx: 1 }} />
                 <Button size="small" color="inherit" 
                         sx={{ textTransform: 'none'}} 
                         target="_blank" rel="noopener noreferrer" 
-                        href="https://github.com/microsoft/data-formulator/issues">Contact Us</Button>
+                        href="https://github.com/microsoft/data-formulator/issues">{t('footer.contact')}</Button>
                 <Typography sx={{ display: 'inline', fontSize: '12px', ml: 1 }}> @ {new Date().getFullYear()}</Typography>
             </Box>
         </Box>)

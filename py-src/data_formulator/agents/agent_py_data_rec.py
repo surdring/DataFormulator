@@ -316,7 +316,7 @@ class PythonDataRecAgent(object):
                     *filtered_prev_messages,
                     {"role":"user","content": user_query}]
         
-        response = self.client.get_completion(messages = messages)
+        response = self.client.get_completion(messages = messages, max_tokens=2048)
         
         return self.process_gpt_response(input_tables, messages, response)
         
@@ -336,6 +336,6 @@ class PythonDataRecAgent(object):
                     {"role":"user", 
                     "content": f"This is the result from the latest python code:\n\n{sample_data_str}\n\nUpdate the code above based on the following instruction:\n\n{new_instruction}"}]
 
-        response = self.client.get_completion(messages = messages)
+        response = self.client.get_completion(messages = messages, max_tokens=2048)
 
         return self.process_gpt_response(input_tables, messages, response)

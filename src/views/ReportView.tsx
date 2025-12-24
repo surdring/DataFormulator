@@ -219,8 +219,9 @@ export const ReportView: FC = () => {
 
     const charts = useSelector((state: DataFormulatorState) => state.charts);
     const tables = useSelector((state: DataFormulatorState) => state.tables);
-    const modelSlot = useSelector((state: DataFormulatorState) => state.modelSlots);
+    const modelSlot = useSelector((state: DataFormulatorState) => (state as any).modelSlots);
     const models = useSelector((state: DataFormulatorState) => state.models);
+    const activeModel = useSelector(dfSelectors.getActiveModel);
     const conceptShelfItems = useSelector((state: DataFormulatorState) => state.conceptShelfItems);
     const config = useSelector((state: DataFormulatorState) => state.config);
     const allGeneratedReports = useSelector(dfSelectors.getAllGeneratedReports);
@@ -607,7 +608,8 @@ export const ReportView: FC = () => {
         const reportId = `report-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
         try {
-            const model = models.find(m => m.id === modelSlot.generation);
+            const generationModelId = modelSlot?.generation;
+            const model = (generationModelId ? models.find(m => m.id === generationModelId) : undefined) || activeModel;
             if (!model) {
                 throw new Error(t('report.error.noModel'));
             }
